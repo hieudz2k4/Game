@@ -8,3 +8,12 @@
 
 1681013880 source:c:\sdl\dino game\dino game\object.cpp
 
+1682047715 source:c:\sdl\dino game\dino game\game\main.cpp
+	<bits/stdc++.h>
+	<SDL_image.h>
+	<SDL.h>
+	<SDL_mixer.h>
+	<SDL_ttf.h>
+
+1681013880 source:c:\sdl\dino game\dino game\game\object.cpp
+

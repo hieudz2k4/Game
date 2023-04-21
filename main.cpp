@@ -499,11 +499,24 @@ int main(int argc, char* argv[])
 
             object buttonPlay ;
             SDL_Texture* buttonPlayTexture ;
-            buttonPlayTexture = buttonPlay.LoadTexture("Image//Background//Help.png") ;
-            buttonPlay.setPos(SCREEN_WIDTH/2 - 200,SCREEN_HEIGHT/2 + 200) ;
+            buttonPlayTexture = buttonPlay.LoadTexture("Image//Background//Play.png") ;
+            buttonPlay.setPos(520,SCREEN_HEIGHT/2 + 200) ;
             buttonPlay.draw(grender,buttonPlayTexture,nullptr);
+            buttonPlay.Free(buttonPlayTexture) ;
+
             object buttonHelp;
+            SDL_Texture* buttonHelpTexture ;
+            buttonHelpTexture = buttonHelp.LoadTexture("Image//Background//Help3.png") ;
+            buttonHelp.setPos(520,SCREEN_HEIGHT/2 + 100) ;
+            buttonHelp.draw(grender,buttonHelpTexture,nullptr);
+            buttonHelp.Free(buttonHelpTexture) ;
+
             object buttonExit ;
+            SDL_Texture* buttonExitTexture ;
+            buttonExitTexture = buttonExit.LoadTexture("Image//Background//Quit.png") ;
+            buttonExit.setPos(520,SCREEN_HEIGHT/2) ;
+            buttonExit.draw(grender,buttonExitTexture,nullptr);
+            buttonExit.Free(buttonExitTexture) ;
 
             Mix_PlayMusic(gMenuSound,-1) ;
 
