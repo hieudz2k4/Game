@@ -29,6 +29,8 @@ Mix_Music* gMenuSound = nullptr ;
 Mix_Chunk* gJump = nullptr ;
 Mix_Chunk* gDead = nullptr ;
 Mix_Chunk* gPoint = nullptr ;
+Mix_Chunk* gClick = nullptr ;
+
 bool isRunning = true ;
 bool endGame = false;
 bool loadMenu = true ;
@@ -53,6 +55,7 @@ public:
     };
     ~object(){};
     void setPos(const int& x, const int& y){rect_.x = x ; rect_.y = y ;}
+    void setSize(const int& x, const int& y){rect_.w = x ; rect_.h = y;}
     SDL_Rect getRect() const{return rect_ ;}
     SDL_Texture* LoadTexture(std::string path)
     {
@@ -85,6 +88,14 @@ public:
         SDL_Rect renderquad = {rect_.x,rect_.y,rect_.w,rect_.h} ;
         //DAY DOI TUONG LEN MAN HINH
         SDL_RenderCopy(render,texture,srcRect,&renderquad) ;
+    }
+    bool checkFocus(const int& x , const int& y)
+    {
+        if(x >= rect_.x && x <= rect_.x + rect_.w&&
+           y >= rect_.y && y <= rect_.y + rect_.h)
+            return true ;
+        return false ;
+
     }
     void Free(SDL_Texture* texture)
     {
@@ -379,15 +390,16 @@ bool Init()
         }
     }
 
-    if(Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT,2,4096) == -1)
+    if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT,2,4096) == -1)
     {
         std::cout << "Lỗi âm thanh" ;
         success = false ;
     }
+    gClick = Mix_LoadWAV("Sound//Click.wav") ;
     gDead = Mix_LoadWAV("Sound//Dead.wav") ;
     gJump = Mix_LoadWAV("Sound//Jump.wav") ;
     gMenuSound = Mix_LoadMUS("Sound//Clown.wav") ;
-    if(gDead == NULL || gJump == NULL || gMenuSound == NULL)
+    if(gDead == NULL || gJump == NULL||gMenuSound == NULL)
     {
         std::cout << "loi load file am thanh" ;
         success = false ;
@@ -424,6 +436,8 @@ void close()
     gDinoTexture = nullptr ;
     SDL_DestroyTexture(gObstacleTexture) ;
     gObstacleTexture = nullptr ;
+    Mix_FreeChunk(gClick);
+    gClick = nullptr ;
     Mix_FreeChunk(gJump) ;
     gJump = nullptr ;
     Mix_FreeChunk(gDead) ;
@@ -489,7 +503,7 @@ int main(int argc, char* argv[])
 
         Uint32 timeValue = SDL_GetTicks() / 1000;
         //Menu
-        if(loadMenu == true)
+        if(loadMenu)
         {
             object Menu;
             SDL_Texture* gMenu ;
@@ -518,6 +532,42 @@ int main(int argc, char* argv[])
             buttonExit.draw(grender,buttonExitTexture,nullptr);
             buttonExit.Free(buttonExitTexture) ;
 
+            //even
+
+            SDL_Event eventMenu ;
+
+            while(SDL_PollEvent(&eventMenu)!=0)
+            {
+                if(eventMenu.type == SDL_QUIT)
+                {
+                    isRunning = false ;
+                }
+                else if(eventMenu.type == SDL_MOUSEMOTION)
+                {
+                    int mousePosx = eventMenu.motion.x ;
+                    int mousePosy = eventMenu.motion.y ;
+                    std::cout << mousePosx << " " << mousePosy ;
+                    if(buttonPlay.checkFocus(mousePosx,mousePosy) == true)
+                    {
+                        buttonPlay.setPos(10,10) ;
+                        //buttonPlay.setSize();
+                        //Mix_PlayChannel(-1, gClick,0) ;
+
+                    }
+                    else if(buttonHelp.checkFocus(mousePosx,mousePosy) == true)
+                    {
+                        //buttonHelp.setPos() ;
+                        //buttonHelp.setSize();
+                    }
+                    else if(buttonExit.checkFocus(mousePosx,mousePosy) == true)
+                    {
+                        //buttonExit.setPos() ;
+                        //buttonExit.setSize();
+                    }
+                }
+
+            }
+            gMenuSound = Mix_LoadMUS("Sound//Clown.wav") ;
             Mix_PlayMusic(gMenuSound,-1) ;
 
         }
