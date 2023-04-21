@@ -25,12 +25,13 @@ SDL_Texture* gObstacleTexture = nullptr ;
 SDL_Event gevent ;
 
 //âm thanh
-Mix_Chunk* gMenuSound = nullptr ;
+Mix_Music* gMenuSound = nullptr ;
 Mix_Chunk* gJump = nullptr ;
 Mix_Chunk* gDead = nullptr ;
 Mix_Chunk* gPoint = nullptr ;
 bool isRunning = true ;
 bool endGame = false;
+bool loadMenu = true ;
 
 //text
 TTF_Font* font_time = nullptr;
@@ -385,7 +386,8 @@ bool Init()
     }
     gDead = Mix_LoadWAV("Sound//Dead.wav") ;
     gJump = Mix_LoadWAV("Sound//Jump.wav") ;
-    if(gDead == NULL || gJump == NULL)
+    gMenuSound = Mix_LoadMUS("Sound//Clown.wav") ;
+    if(gDead == NULL || gJump == NULL || gMenuSound == NULL)
     {
         std::cout << "loi load file am thanh" ;
         success = false ;
@@ -426,6 +428,8 @@ void close()
     gJump = nullptr ;
     Mix_FreeChunk(gDead) ;
     gDead = nullptr ;
+    Mix_FreeMusic(gMenuSound);
+    gMenuSound = nullptr ;
     IMG_Quit() ;
     SDL_QUIT;
 }
@@ -442,6 +446,7 @@ int main(int argc, char* argv[])
     //Obstacles
     Obstacle obstacle ;
     //sinh ra path file ngẫu nhiên
+    /*
     std::string directory = "Image//Obstacles//" ;
     std::string fileExtension = ".png" ;
     std::srand(std::time(0));
@@ -454,6 +459,7 @@ int main(int argc, char* argv[])
     int obstaclex = SCREEN_WIDTH - obstacleRect.w ;
     int obstacley = SCREEN_HEIGHT-obstacleRect.h - 5 ;
     obstacle.setPos(obstaclex,obstacley)  ;
+    */
 
 
     //Obstacle airplane
@@ -476,10 +482,33 @@ int main(int argc, char* argv[])
             }
             dino.HandleEvent(gevent) ;
         }
+
+
         SDL_SetRenderDrawColor(grender, RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR) ;
         SDL_RenderClear(grender) ;
 
         Uint32 timeValue = SDL_GetTicks() / 1000;
+        //Menu
+        if(loadMenu == true)
+        {
+            object Menu;
+            SDL_Texture* gMenu ;
+            gMenu = Menu.LoadTexture("Image//Background//Menu1.png");
+            Menu.draw(grender,gMenu,nullptr) ;
+            Menu.Free(gMenu) ;
+
+            object buttonPlay ;
+            SDL_Texture* buttonPlayTexture ;
+            buttonPlayTexture = buttonPlay.LoadTexture("Image//Background//Help.png") ;
+            buttonPlay.setPos(SCREEN_WIDTH/2 - 200,SCREEN_HEIGHT/2 + 200) ;
+            buttonPlay.draw(grender,buttonPlayTexture,nullptr);
+            object buttonHelp;
+            object buttonExit ;
+
+            Mix_PlayMusic(gMenuSound,-1) ;
+
+        }
+        else{
         //BackGround
         if(timeValue<= 15)
             Background.x_val -= 1 ;
@@ -527,6 +556,7 @@ int main(int argc, char* argv[])
             int obstacley = SCREEN_HEIGHT-obstacleRect.h - 5 ;
             obstacle.setPos(obstaclex,obstacley)  ;
             obstacle.draw(grender,gObstacleTexture,nullptr) ;
+            obstacle.HandleMove(SCREEN_WIDTH,SCREEN_HEIGHT) ;
         }
 
         std::string stringScore = "Score: " ;
@@ -537,6 +567,7 @@ int main(int argc, char* argv[])
         score_game.LoadTextTexture(font_time,grender) ;
         score_game.showText(grender,SCREEN_WIDTH- 220,15,0) ;
         score_game.free() ;
+        }
 
         SDL_RenderPresent(grender);
     }
