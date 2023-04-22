@@ -32,9 +32,10 @@ Mix_Chunk* gPoint = nullptr ;
 Mix_Chunk* gClick = nullptr ;
 
 bool isRunning = true ;
-bool start = false ;
-bool endGame = false;
 bool loadMenu = true ;
+bool isStarting = false ;
+bool isHelping = false ;
+bool endGame = false;
 
 //text
 TTF_Font* font_time = nullptr;
@@ -150,8 +151,11 @@ public:
             break;
         case JUMP :
             gDinoTexture = LoadTexture("Image//Dino//Dino_Jump.png");
-            draw(grender,gDinoTexture,NULL) ;
-            Mix_PlayChannel(-1,gJump,0) ;
+            while(rect_.y >= maxHeight)
+            {
+                rect_.y -= 5 ;
+                draw(grender,gDinoTexture,nullptr);
+            }
             break ;
         case RUN:
             gDinoTexture = LoadTexture("Image//Dino//Dino_Run.png") ;
@@ -483,6 +487,7 @@ int main(int argc, char* argv[])
 
     while(isRunning)
     {
+        /*
         while(SDL_PollEvent(&gevent)!=0)
         {
             if(gevent.type == SDL_QUIT)
@@ -491,7 +496,7 @@ int main(int argc, char* argv[])
             }
             dino.HandleEvent(gevent) ;
         }
-
+        */
 
         SDL_SetRenderDrawColor(grender, RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR) ;
         SDL_RenderClear(grender) ;
@@ -528,65 +533,24 @@ int main(int argc, char* argv[])
             int mousePosy = gevent.motion.y ;
             while(SDL_PollEvent(&gevent)!=0)
             {
-                if(gevent.type == SDL_MOUSEBUTTONUP||gevent.type==SDL_MOUSEBUTTONDOWN)
+                if(gevent.type == SDL_QUIT)
+                {
+                    isRunning = false ;
+                }
+                else if(gevent.type == SDL_MOUSEBUTTONUP||gevent.type==SDL_MOUSEBUTTONDOWN)
                 {
                     std::cout << mousePosx << " " << mousePosy ;
                     if(buttonPlay.checkFocus(mousePosx,mousePosy) == true)
                     {
                         Mix_PlayChannel(-1, gClick,0) ;
-                        start = true;
+                        isStarting = true;
                         loadMenu = false ;
                     }
                     else if(buttonHelp.checkFocus(mousePosx,mousePosy) == true)
                     {
                         Mix_PlayChannel(-1, gClick,0) ;
-                        /*
-                        SDL_Window* helpWindow = SDL_CreateWindow("Help Game", SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,600,300,SDL_WINDOW_SHOWN) ;
-                        SDL_Renderer* helpRender = nullptr ;
-                        SDL_Event helpEvent;
-                        if(helpWindow == NULL)
-                            std::cout << "loi tao cua so helpWindow" << std::endl ;
-                        else
-                        {
-                            helpRender = SDL_CreateRenderer(helpWindow,-1,SDL_WINDOW_SHOWN) ;
-                            if(helpRender == NULL)
-                                std::cout << "loi khoi tao helpRender" ;
-                            //TAO RENDER THANH CONG
-                            else
-                            {
-                                // KHOI TAO RENDERER COLOR
-                                SDL_SetRenderDrawColor(helpRender,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR) ;
-
-                                //KHOI TAO PNG LOADING, TAO CO
-                                int imgFlags = IMG_INIT_PNG ;
-                                if(!(IMG_Init(imgFlags) && imgFlags))
-                                {
-                                    std::cout << "loi IMG_Init(imgFlags) && imgFlags" << std::endl ;
-
-                                }
-
-                            }
-                        }
-
-                        bool quitHelp = false ;
-                        while(!quitHelp)
-                        {
-                            while(SDL_PollEvent(&helpEvent)!=0)
-                            {
-                                if(helpEvent.type == SDL_QUIT)
-                                {
-                                    quitHelp = true ;
-                                }
-                            }
-                        }
-                        SDL_DestroyWindow(helpWindow) ;
-                        helpWindow = nullptr ;
-                        SDL_DestroyRenderer(helpRender) ;
-                        helpRender = nullptr ;
-                        IMG_Quit() ;
-                        SDL_QUIT ;
-                        */
-
+                        isHelping = true ;
+                        loadMenu = false ;
                     }
                     else if(buttonExit.checkFocus(mousePosx,mousePosy) == true)
                     {
@@ -624,18 +588,38 @@ int main(int argc, char* argv[])
 
 
         }
-        else if(start == true)
+        else if(isStarting == true)
         {
+            while(SDL_PollEvent(&gevent)!=0)
+            {
+                if(gevent.type == SDL_QUIT)
+                {
+                    isRunning = false ;
+                }
+                else if(gevent.type == SDL_KEYUP || gevent.type == SDL_KEYDOWN)
+                {
+                    if(gevent.key.keysym.scancode == SDL_SCANCODE_ESCAPE)
+                    {
+                        isStarting = false ;
+                        loadMenu = true ;
+                    }
+                }
+                dino.HandleEvent(gevent) ;
+            }
             //BackGround
             if(timeValue<= 15)
-                Background.x_val -= 1 ;
-            else if(timeValue>=15)
+                Background.x_val -= 1.5 ;
+            else if(timeValue<=45)
+                Background.x_val -= 1.8 ;
+            else if(timeValue<=75)
                 Background.x_val -= 2 ;
-            else if(timeValue>=45)
-                Background.x_val -= 3 ;
-            else if(timeValue>= 75)
+            else if(timeValue<=85)
+                Background.x_val -= 2.2;
+            else if(timeValue<=95)
+                Background.x_val -= 2.5;
+            else if(timeValue<=105)
                 Background.x_val -= 4 ;
-            else if(timeValue>= 85)
+            else
                 Background.x_val -= 5 ;
 
             Background.setPos(Background.x_val, 0);
@@ -679,7 +663,7 @@ int main(int argc, char* argv[])
             if(dino.checkCollision(obstacle.getRect()) == true || dino.checkCollision(airplane.getRect()) == true)
             {
                 endGame = true ;
-                start = false ;
+                isStarting = false ;
             }
             std::string stringScore = "Score: " ;
             Uint32 scoreValue = 10*SDL_GetTicks()/1000 ;
@@ -691,7 +675,32 @@ int main(int argc, char* argv[])
             score_game.free() ;
 
         }
-            SDL_RenderPresent(grender);
+        else if(isHelping == true)
+        {
+            while(SDL_PollEvent(&gevent)!= 0)
+            {
+                if(gevent.type == SDL_QUIT)
+                {
+                    loadMenu = true ;
+                    isHelping = false ;
+                }
+                else if(gevent.type == SDL_KEYDOWN || gevent.type == SDL_KEYUP)
+                {
+                    if(gevent.key.keysym.scancode == SDL_SCANCODE_ESCAPE)
+                    {
+                        loadMenu = true ;
+                        isHelping = false ;
+                    }
+                }
+            }
+            object helpObject ;
+            SDL_Texture* helpObjectTexture = nullptr;
+            helpObjectTexture = helpObject.LoadTexture("Image//Background//Menu.png") ;
+            helpObject.draw(grender,helpObjectTexture,nullptr) ;
+            helpObject.Free(helpObjectTexture) ;
+        }
+
+        SDL_RenderPresent(grender);
         if(endGame)
         {
 
