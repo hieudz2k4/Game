@@ -44,7 +44,7 @@ class object
 protected :
     SDL_Rect rect_ ;
 public:
-    int x_val, y_val ;
+    float x_val, y_val ;
     object()
     {
         rect_.x = 0 ;
@@ -150,14 +150,8 @@ public:
             break;
         case JUMP :
             gDinoTexture = LoadTexture("Image//Dino//Dino_Jump.png");
-            if(onGround == true)
-            {
-                rect_.y -= 200 ;
-                draw(grender,gDinoTexture,NULL) ;
-                Mix_PlayChannel(-1,gJump,0) ;
-            }
-
-
+            draw(grender,gDinoTexture,NULL) ;
+            Mix_PlayChannel(-1,gJump,0) ;
             break ;
         case RUN:
             gDinoTexture = LoadTexture("Image//Dino//Dino_Run.png") ;
@@ -516,47 +510,82 @@ int main(int argc, char* argv[])
             SDL_Texture* buttonPlayTexture ;
             buttonPlayTexture = buttonPlay.LoadTexture("Image//Background//Play1.png") ;
             buttonPlay.setPos(520,SCREEN_HEIGHT/2) ;
-            buttonPlay.draw(grender,buttonPlayTexture,nullptr);
 
             object buttonHelp;
             SDL_Texture* buttonHelpTexture ;
             buttonHelpTexture = buttonHelp.LoadTexture("Image//Background//Help1.png") ;
             buttonHelp.setPos(520,SCREEN_HEIGHT/2 + 100) ;
-            buttonHelp.draw(grender,buttonHelpTexture,nullptr);
 
             object buttonExit ;
             SDL_Texture* buttonExitTexture ;
             buttonExitTexture = buttonExit.LoadTexture("Image//Background//Quit1.png") ;
             buttonExit.setPos(520,SCREEN_HEIGHT/2+200) ;
-            buttonExit.draw(grender,buttonExitTexture,nullptr);
 
             //even
 
-            SDL_Event eventMenu ;
-            int mousePosx = 0 ;
-            int mousePosy = 0 ;
-            while(SDL_PollEvent(&eventMenu)!=0)
+            //SDL_Event eventMenu ;
+            int mousePosx = gevent.motion.x ;
+            int mousePosy = gevent.motion.y ;
+            while(SDL_PollEvent(&gevent)!=0)
             {
-                if(eventMenu.type == SDL_QUIT)
+                if(gevent.type == SDL_MOUSEBUTTONUP||gevent.type==SDL_MOUSEBUTTONDOWN)
                 {
-                    isRunning = false ;
-                }
-                else if(eventMenu.type == SDL_MOUSEBUTTONUP)
-                {
-                    int mousePosx = eventMenu.motion.x ;
-                    int mousePosy = eventMenu.motion.y ;
                     std::cout << mousePosx << " " << mousePosy ;
                     if(buttonPlay.checkFocus(mousePosx,mousePosy) == true)
                     {
-                        buttonPlay.setPos(10,10) ;
-                        //buttonPlay.setSize();
                         Mix_PlayChannel(-1, gClick,0) ;
                         start = true;
-
+                        loadMenu = false ;
                     }
                     else if(buttonHelp.checkFocus(mousePosx,mousePosy) == true)
                     {
                         Mix_PlayChannel(-1, gClick,0) ;
+
+                        SDL_Window* helpWindow = SDL_CreateWindow("Help Game", SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,600,300,SDL_WINDOW_SHOWN) ;
+                        SDL_Renderer* helpRender = nullptr ;
+                        SDL_Event helpEvent;
+                        if(helpWindow == NULL)
+                            std::cout << "loi tao cua so helpWindow" << std::endl ;
+                        else
+                        {
+                            helpRender = SDL_CreateRenderer(helpWindow,-1,SDL_WINDOW_SHOWN) ;
+                            if(helpRender == NULL)
+                                std::cout << "loi khoi tao helpRender" ;
+                            //TAO RENDER THANH CONG
+                            else
+                            {
+                                // KHOI TAO RENDERER COLOR
+                                SDL_SetRenderDrawColor(helpRender,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR) ;
+
+                                //KHOI TAO PNG LOADING, TAO CO
+                                int imgFlags = IMG_INIT_PNG ;
+                                if(!(IMG_Init(imgFlags) && imgFlags))
+                                {
+                                    std::cout << "loi IMG_Init(imgFlags) && imgFlags" << std::endl ;
+
+                                }
+
+                            }
+                        }
+
+                        bool quitHelp = false ;
+                        while(!quitHelp)
+                        {
+                            while(SDL_PollEvent(&helpEvent)!=0)
+                            {
+                                if(helpEvent.type == SDL_QUIT)
+                                {
+                                    quitHelp = true ;
+                                }
+                            }
+                        }
+                        SDL_DestroyWindow(helpWindow) ;
+                        helpWindow = nullptr ;
+                        SDL_DestroyRenderer(helpRender) ;
+                        helpRender = nullptr ;
+                        IMG_Quit() ;
+                        SDL_QUIT ;
+
 
                     }
                     else if(buttonExit.checkFocus(mousePosx,mousePosy) == true)
@@ -565,10 +594,29 @@ int main(int argc, char* argv[])
                         isRunning = false ;
                     }
                 }
+                else if(gevent.type == SDL_MOUSEMOTION)
+                {
+                    if(buttonPlay.checkFocus(mousePosx,mousePosy) == true)
+                    {
+                        buttonPlay.setPos(0,0) ;
+
+                    }
+                    else if(buttonHelp.checkFocus(mousePosx,mousePosy) == true)
+                    {
+
+                    }
+                    else if(buttonExit.checkFocus(mousePosx,mousePosy) == true)
+                    {
+
+
+                    }
+                }
             }
-            Mix_PlayMusic(gMenuMusic,-1) ;
 
+            buttonPlay.draw(grender,buttonPlayTexture,nullptr);
 
+            buttonHelp.draw(grender,buttonHelpTexture,nullptr);
+            buttonExit.draw(grender,buttonExitTexture,nullptr);
             Menu.Free(gMenu) ;
             buttonPlay.Free(buttonPlayTexture) ;
             buttonHelp.Free(buttonHelpTexture) ;
@@ -576,18 +624,18 @@ int main(int argc, char* argv[])
 
 
         }
-        if(start == true)
+        else if(start == true)
         {
             //BackGround
             if(timeValue<= 15)
                 Background.x_val -= 1 ;
             else if(timeValue>=15)
                 Background.x_val -= 2 ;
-            else if(timeValue>=35)
+            else if(timeValue>=45)
                 Background.x_val -= 3 ;
-            else if(timeValue>= 45)
+            else if(timeValue>= 75)
                 Background.x_val -= 4 ;
-            else if(timeValue>= 55)
+            else if(timeValue>= 85)
                 Background.x_val -= 5 ;
 
             Background.setPos(Background.x_val, 0);
@@ -603,12 +651,13 @@ int main(int argc, char* argv[])
             dino.Show() ;
 
             //airplane
+            airplane.setPos(SCREEN_WIDTH/2, SCREEN_HEIGHT/2) ;
             airplane.draw(grender, airplaneTexture,nullptr) ;
             airplane.HandleMove(SCREEN_WIDTH, SCREEN_HEIGHT) ;
             airplane.Free(airplaneTexture) ;
 
             //Obstacles
-            for(int i = 1 ; i<=MAX_OBSTACLES;i++)
+            for(int i = 1 ; i<=MAX_OBSTACLES; i++)
             {
                 std::string directory = "Image//Obstacles//" ;
                 std::string fileExtension = ".png" ;
@@ -625,20 +674,23 @@ int main(int argc, char* argv[])
                 obstacle.setPos(obstaclex,obstacley)  ;
                 obstacle.draw(grender,gObstacleTexture,nullptr) ;
                 obstacle.HandleMove(SCREEN_WIDTH,SCREEN_HEIGHT) ;
+
             }
             if(dino.checkCollision(obstacle.getRect()) == true || dino.checkCollision(airplane.getRect()) == true)
             {
                 endGame = true ;
+                start = false ;
             }
             std::string stringScore = "Score: " ;
-            Uint32 scoreValue = 10*SDL_GetTicks() / 1000;
+            Uint32 scoreValue = 10*SDL_GetTicks()/1000 ;
             std::string scoreToString = std::to_string(scoreValue);
             stringScore+=scoreToString ;
             score_game.setText(stringScore);
             score_game.LoadTextTexture(font_time,grender) ;
             score_game.showText(grender,SCREEN_WIDTH- 220,15,0) ;
             score_game.free() ;
-            }
+
+        }
             SDL_RenderPresent(grender);
         if(endGame)
         {
