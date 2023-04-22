@@ -540,7 +540,7 @@ int main(int argc, char* argv[])
                     else if(buttonHelp.checkFocus(mousePosx,mousePosy) == true)
                     {
                         Mix_PlayChannel(-1, gClick,0) ;
-
+                        /*
                         SDL_Window* helpWindow = SDL_CreateWindow("Help Game", SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,600,300,SDL_WINDOW_SHOWN) ;
                         SDL_Renderer* helpRender = nullptr ;
                         SDL_Event helpEvent;
@@ -585,7 +585,7 @@ int main(int argc, char* argv[])
                         helpRender = nullptr ;
                         IMG_Quit() ;
                         SDL_QUIT ;
-
+                        */
 
                     }
                     else if(buttonExit.checkFocus(mousePosx,mousePosy) == true)
