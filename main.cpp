@@ -484,6 +484,8 @@ int main(int argc, char* argv[])
         SDL_RenderClear(grender) ;
 
         Uint32 timeValue = SDL_GetTicks() / 1000;
+        int mousePosx = gevent.motion.x ;
+        int mousePosy = gevent.motion.y ;
         //Menu
         if(loadMenu)
         {
@@ -516,8 +518,6 @@ int main(int argc, char* argv[])
             buttonYes.Free(buttonYesTexture) ;
 
             //SDL_Event eventMenu ;
-            int mousePosx = gevent.motion.x ;
-            int mousePosy = gevent.motion.y ;
             while(SDL_PollEvent(&gevent)!=0)
             {
                 if(gevent.type == SDL_QUIT)
@@ -690,6 +690,23 @@ int main(int argc, char* argv[])
         }
         else if(isQuitting)
         {
+            object quitObject ;
+            SDL_Texture* quitObjectTexture = nullptr ;
+            quitObjectTexture = quitObject.LoadTexture("Image//Background//QuitImage.png") ;
+            quitObject.draw(grender,quitObjectTexture,nullptr) ;
+
+            object buttonYes ;
+            SDL_Texture* buttonYesTexture = nullptr ;
+            buttonYesTexture = buttonYes.LoadTexture("Image//Background//Yes.png") ;
+            buttonYes.setPos(SCREEN_WIDTH/2 - 250,SCREEN_HEIGHT/ 2) ;
+            buttonYes.draw(grender,buttonYesTexture,nullptr) ;
+
+            object buttonNo ;
+            SDL_Texture* buttonNoTexture = nullptr;
+            buttonNoTexture = buttonNo.LoadTexture("Image//Background//No.png") ;
+            buttonNo.setPos(SCREEN_WIDTH/2 + 100, SCREEN_HEIGHT/2) ;
+            buttonNo.draw(grender,buttonNoTexture,nullptr) ;
+
             while(SDL_PollEvent(&gevent)!= 0)
             {
                 if(gevent.type == SDL_QUIT)
@@ -704,35 +721,25 @@ int main(int argc, char* argv[])
                         loadMenu = true ;
                         isQuitting = false ;
                     }
-                    else if(gevent.key.keysym.sym == SDLK_RETURN || gevent.key.keysym.sym == SDLK_KP_ENTER)
-                    {
-                        isRunning = false ;
-                    }
                 }
                 else if(gevent.type == SDL_MOUSEBUTTONDOWN || gevent.type == SDL_MOUSEBUTTONUP)
                 {
-                    if()
+                    if(buttonYes.checkFocus(mousePosx,mousePosy))
+                    {
+                        isRunning = false ;
+                        isQuitting = false ;
+                    }
+                    else if(buttonNo.checkFocus(mousePosx,mousePosy))
+                    {
+                        loadMenu = true ;
+                        isQuitting = false ;
+                    }
                 }
 
             }
-            object quitObject ;
-            SDL_Texture* quitObjectTexture = nullptr ;
-            quitObjectTexture = quitObject.LoadTexture("Image//Background//QuitImage.png") ;
-            quitObject.draw(grender,quitObjectTexture,nullptr) ;
+
             quitObject.Free(quitObjectTexture) ;
-
-            object buttonYes ;
-            SDL_Texture* buttonYesTexture ;
-            buttonYesTexture = buttonYes.LoadTexture("Image//Background//Yes.png") ;
-            buttonYes.setPos(SCREEN_WIDTH/2,SCREEN_HEIGHT / 2) ;
- ;          buttonYes.draw(grender,buttonYesTexture,nullptr) ;
             buttonYes.Free(buttonYesTexture) ;
-
-            object buttonNo ;
-            SDL_Texture* buttonNoTexture ;
-            buttonNoTexture = buttonNo.LoadTexture("Image//Background//No.png") ;
-            buttonNo.setPos(SCREEN_WIDTH/2+100, SCREEN_HEIGHT/2) ;
-            buttonNo.draw(grender,buttonNoTexture,nullptr) ;
             buttonNo.Free(buttonNoTexture) ;
         }
         else if(endGame)
@@ -760,23 +767,23 @@ int main(int argc, char* argv[])
                 }
                 else if(gevent.type == SDL_MOUSEBUTTONDOWN || gevent.type == SDL_MOUSEBUTTONUP)
                 {
-                    if(buttonYes.checkfoc)
+
                 }
             }
             object gameOver ;
-            SDL_Texture* gameOverTexture ;
+            SDL_Texture* gameOverTexture = nullptr ;
             gameOverTexture = gameOver.LoadTexture("Image//Background//GameOver.png") ;
             gameOver.draw(grender,gameOverTexture,nullptr) ;
             gameOver.Free(gameOverTexture) ;
 
             object buttonYes ;
-            SDL_Texture* buttonYesTexture ;
+            SDL_Texture* buttonYesTexture = nullptr;
             buttonYesTexture = buttonYes.LoadTexture("Image//Background//Yes.png") ;
             buttonYes.draw(grender,buttonYesTexture,nullptr) ;
             buttonYes.Free(buttonYesTexture) ;
 
             object buttonNo ;
-            SDL_Texture* buttonNoTexture ;
+            SDL_Texture* buttonNoTexture = nullptr;
             buttonNoTexture = buttonNo.LoadTexture("Image//Background//No.png") ;
             buttonNo.draw(grender,buttonNoTexture,nullptr) ;
             buttonNo.Free(buttonNoTexture) ;
