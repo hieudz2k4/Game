@@ -35,6 +35,7 @@ bool isRunning = true ;
 bool loadMenu = true ;
 bool isStarting = false ;
 bool isHelping = false ;
+bool isQuitting = false ;
 bool endGame = false;
 
 //text
@@ -126,7 +127,7 @@ public:
         jumpVel = -DINO_HEIGHT;
         maxHeight = SCREEN_HEIGHT - DINO_HEIGHT - 200 ;
         minHeight = SCREEN_HEIGHT - DINO_HEIGHT - 10 ;
-        x_pos = 10 ;
+        x_pos = 20 ;
         y_pos = minHeight ;
         state = 1 ;
         onGround = true ;
@@ -151,6 +152,7 @@ public:
             break;
         case JUMP :
             gDinoTexture = LoadTexture("Image//Dino//Dino_Jump.png");
+            Mix_PlayChannel(-1,gJump,0) ;
             while(rect_.y >= maxHeight)
             {
                 rect_.y -= 5 ;
@@ -340,15 +342,6 @@ private:
     int width ;
     int height ;
 };
-/*
-void showMenu()
-{
-    object Menu;
-    SDL_Texture* gMenuTexture = nullptr;
-    gMenuTexture = Menu.LoadTexture("Image//Background//Menu.png") ;
-    Menu.draw(gMenuTexture) ;
-}
-*/
 bool Init()
 {
     bool success = true ;
@@ -397,6 +390,7 @@ bool Init()
     gClick = Mix_LoadWAV("Sound//Click.wav") ;
     gDead = Mix_LoadWAV("Sound//Dead.wav") ;
     gJump = Mix_LoadWAV("Sound//Jump.wav") ;
+    gPoint = Mix_LoadWAV("Sound//Point.wav");
     gMenuMusic = Mix_LoadMUS("Sound//Clown.wav") ;
     if(gDead == NULL || gJump == NULL||gMenuMusic == NULL || gClick==NULL)
     {
@@ -482,22 +476,10 @@ int main(int argc, char* argv[])
 
     Text score_game ;
     score_game.setColor(Text::YELLOW);
-    Text gameOver ;
-    gameOver.setColor(Text::ColorText::WHITE) ;
 
     while(isRunning)
     {
-        /*
-        while(SDL_PollEvent(&gevent)!=0)
-        {
-            if(gevent.type == SDL_QUIT)
-            {
-                isRunning = false ;
-            }
-            dino.HandleEvent(gevent) ;
-        }
-        */
-
+        //Mix_PlayMusic(gMenuMusic,-1) ;
         SDL_SetRenderDrawColor(grender, RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR) ;
         SDL_RenderClear(grender) ;
 
@@ -527,6 +509,11 @@ int main(int argc, char* argv[])
             buttonExit.setPos(520,SCREEN_HEIGHT/2+200) ;
 
             //even
+            object buttonYes ;
+            SDL_Texture* buttonYesTexture ;
+            buttonYesTexture = buttonYes.LoadTexture("Image//Background//Yes1.png") ;
+            buttonYes.draw(grender,buttonYesTexture,nullptr) ;
+            buttonYes.Free(buttonYesTexture) ;
 
             //SDL_Event eventMenu ;
             int mousePosx = gevent.motion.x ;
@@ -535,6 +522,7 @@ int main(int argc, char* argv[])
             {
                 if(gevent.type == SDL_QUIT)
                 {
+                    loadMenu = false ;
                     isRunning = false ;
                 }
                 else if(gevent.type == SDL_MOUSEBUTTONUP||gevent.type==SDL_MOUSEBUTTONDOWN)
@@ -555,7 +543,8 @@ int main(int argc, char* argv[])
                     else if(buttonExit.checkFocus(mousePosx,mousePosy) == true)
                     {
                         Mix_PlayChannel(-1, gClick,0) ;
-                        isRunning = false ;
+                        isQuitting = true;
+                        loadMenu = false ;
                     }
                 }
                 else if(gevent.type == SDL_MOUSEMOTION)
@@ -576,9 +565,8 @@ int main(int argc, char* argv[])
                     }
                 }
             }
-
+            //Mix_PlayMusic(gMenuMusic,-1) ;
             buttonPlay.draw(grender,buttonPlayTexture,nullptr);
-
             buttonHelp.draw(grender,buttonHelpTexture,nullptr);
             buttonExit.draw(grender,buttonExitTexture,nullptr);
             Menu.Free(gMenu) ;
@@ -588,13 +576,14 @@ int main(int argc, char* argv[])
 
 
         }
-        else if(isStarting == true)
+        else if(isStarting)
         {
             while(SDL_PollEvent(&gevent)!=0)
             {
                 if(gevent.type == SDL_QUIT)
                 {
-                    isRunning = false ;
+                    loadMenu = true ;
+                    isStarting = false ;
                 }
                 else if(gevent.type == SDL_KEYUP || gevent.type == SDL_KEYDOWN)
                 {
@@ -608,19 +597,19 @@ int main(int argc, char* argv[])
             }
             //BackGround
             if(timeValue<= 15)
-                Background.x_val -= 1.5 ;
+                Background.x_val -= 0.5 ;
             else if(timeValue<=45)
-                Background.x_val -= 1.8 ;
+                Background.x_val -= 0.7 ;
             else if(timeValue<=75)
-                Background.x_val -= 2 ;
+                Background.x_val -= 1 ;
             else if(timeValue<=85)
-                Background.x_val -= 2.2;
+                Background.x_val -= 1.3;
             else if(timeValue<=95)
-                Background.x_val -= 2.5;
+                Background.x_val -= 1.7;
             else if(timeValue<=105)
-                Background.x_val -= 4 ;
+                Background.x_val -= 2 ;
             else
-                Background.x_val -= 5 ;
+                Background.x_val -= 4 ;
 
             Background.setPos(Background.x_val, 0);
             Background.draw(grender , gBackgroundTexture,nullptr) ;
@@ -641,25 +630,22 @@ int main(int argc, char* argv[])
             airplane.Free(airplaneTexture) ;
 
             //Obstacles
-            for(int i = 1 ; i<=MAX_OBSTACLES; i++)
-            {
-                std::string directory = "Image//Obstacles//" ;
-                std::string fileExtension = ".png" ;
-                std::srand(std::time(0));
-                int j = std::rand()%(16)+1 ;
-                std::string fileName = "Ob"+std::to_string(j) ;
-                std::string filePath = directory+fileName+fileExtension ;
-                //std::cout << filePath ;
-                gObstacleTexture = obstacle.LoadTexture(filePath) ;
-                SDL_Rect obstacleRect = obstacle.getRect() ;
-                //int xRandom = std::rand()%(200+1) ;
-                int obstaclex = SCREEN_WIDTH - obstacleRect.w ;
-                int obstacley = SCREEN_HEIGHT-obstacleRect.h - 5 ;
-                obstacle.setPos(obstaclex,obstacley)  ;
-                obstacle.draw(grender,gObstacleTexture,nullptr) ;
-                obstacle.HandleMove(SCREEN_WIDTH,SCREEN_HEIGHT) ;
+            std::string directory = "Image//Obstacles//" ;
+            std::string fileExtension = ".png" ;
+            std::srand(std::time(0));
+            int j = std::rand()%(16)+1 ;
+            std::string fileName = "Ob"+std::to_string(j) ;
+            std::string filePath = directory+fileName+fileExtension ;
+            //std::cout << filePath ;
+            gObstacleTexture = obstacle.LoadTexture(filePath) ;
+            int xRandom = std::rand()%(200+1) ;
+            SDL_Rect obstacleRect = obstacle.getRect() ;
+            int obstaclex = SCREEN_WIDTH - obstacleRect.w + xRandom ;
+            int obstacley = SCREEN_HEIGHT-obstacleRect.h - 10 ;
+            obstacle.setPos(obstaclex,obstacley)  ;
+            obstacle.draw(grender,gObstacleTexture,nullptr) ;
 
-            }
+
             if(dino.checkCollision(obstacle.getRect()) == true || dino.checkCollision(airplane.getRect()) == true)
             {
                 endGame = true ;
@@ -667,15 +653,18 @@ int main(int argc, char* argv[])
             }
             std::string stringScore = "Score: " ;
             Uint32 scoreValue = 10*SDL_GetTicks()/1000 ;
+            if(scoreValue%100 == 0 )
+            {
+                Mix_PlayChannel(-1,gPoint,0) ;
+            }
             std::string scoreToString = std::to_string(scoreValue);
             stringScore+=scoreToString ;
             score_game.setText(stringScore);
             score_game.LoadTextTexture(font_time,grender) ;
             score_game.showText(grender,SCREEN_WIDTH- 220,15,0) ;
             score_game.free() ;
-
         }
-        else if(isHelping == true)
+        else if(isHelping)
         {
             while(SDL_PollEvent(&gevent)!= 0)
             {
@@ -695,16 +684,104 @@ int main(int argc, char* argv[])
             }
             object helpObject ;
             SDL_Texture* helpObjectTexture = nullptr;
-            helpObjectTexture = helpObject.LoadTexture("Image//Background//Menu.png") ;
+            helpObjectTexture = helpObject.LoadTexture("Image//Background//HelpImage.png") ;
             helpObject.draw(grender,helpObjectTexture,nullptr) ;
             helpObject.Free(helpObjectTexture) ;
         }
+        else if(isQuitting)
+        {
+            while(SDL_PollEvent(&gevent)!= 0)
+            {
+                if(gevent.type == SDL_QUIT)
+                {
+                    isRunning = false ;
+                    isQuitting = false ;
+                }
+                else if(gevent.type == SDL_KEYDOWN || gevent.type == SDL_KEYUP)
+                {
+                    if(gevent.key.keysym.scancode == SDL_SCANCODE_ESCAPE)
+                    {
+                        loadMenu = true ;
+                        isQuitting = false ;
+                    }
+                    else if(gevent.key.keysym.sym == SDLK_RETURN || gevent.key.keysym.sym == SDLK_KP_ENTER)
+                    {
+                        isRunning = false ;
+                    }
+                }
+                else if(gevent.type == SDL_MOUSEBUTTONDOWN || gevent.type == SDL_MOUSEBUTTONUP)
+                {
+                    if()
+                }
 
-        SDL_RenderPresent(grender);
-        if(endGame)
+            }
+            object quitObject ;
+            SDL_Texture* quitObjectTexture = nullptr ;
+            quitObjectTexture = quitObject.LoadTexture("Image//Background//QuitImage.png") ;
+            quitObject.draw(grender,quitObjectTexture,nullptr) ;
+            quitObject.Free(quitObjectTexture) ;
+
+            object buttonYes ;
+            SDL_Texture* buttonYesTexture ;
+            buttonYesTexture = buttonYes.LoadTexture("Image//Background//Yes.png") ;
+            buttonYes.setPos(SCREEN_WIDTH/2,SCREEN_HEIGHT / 2) ;
+ ;          buttonYes.draw(grender,buttonYesTexture,nullptr) ;
+            buttonYes.Free(buttonYesTexture) ;
+
+            object buttonNo ;
+            SDL_Texture* buttonNoTexture ;
+            buttonNoTexture = buttonNo.LoadTexture("Image//Background//No.png") ;
+            buttonNo.setPos(SCREEN_WIDTH/2+100, SCREEN_HEIGHT/2) ;
+            buttonNo.draw(grender,buttonNoTexture,nullptr) ;
+            buttonNo.Free(buttonNoTexture) ;
+        }
+        else if(endGame)
         {
 
+            while(SDL_PollEvent(&gevent)!=0)
+            {
+                if(gevent.type == SDL_QUIT)
+                {
+                    loadMenu = true ;
+                    endGame  = false ;
+                }
+                else if(gevent.type == SDL_KEYUP || gevent.type == SDL_KEYDOWN)
+                {
+                    if(gevent.key.keysym.sym == SDLK_SPACE)
+                    {
+                        isStarting = true ;
+                        endGame = false ;
+                    }
+                    else if(gevent.key.keysym.scancode == SDL_SCANCODE_ESCAPE)
+                    {
+                        loadMenu = true;
+                        endGame = false ;
+                    }
+                }
+                else if(gevent.type == SDL_MOUSEBUTTONDOWN || gevent.type == SDL_MOUSEBUTTONUP)
+                {
+                    if(buttonYes.checkfoc)
+                }
+            }
+            object gameOver ;
+            SDL_Texture* gameOverTexture ;
+            gameOverTexture = gameOver.LoadTexture("Image//Background//GameOver.png") ;
+            gameOver.draw(grender,gameOverTexture,nullptr) ;
+            gameOver.Free(gameOverTexture) ;
+
+            object buttonYes ;
+            SDL_Texture* buttonYesTexture ;
+            buttonYesTexture = buttonYes.LoadTexture("Image//Background//Yes.png") ;
+            buttonYes.draw(grender,buttonYesTexture,nullptr) ;
+            buttonYes.Free(buttonYesTexture) ;
+
+            object buttonNo ;
+            SDL_Texture* buttonNoTexture ;
+            buttonNoTexture = buttonNo.LoadTexture("Image//Background//No.png") ;
+            buttonNo.draw(grender,buttonNoTexture,nullptr) ;
+            buttonNo.Free(buttonNoTexture) ;
         }
+        SDL_RenderPresent(grender);
     }
 
     close();
