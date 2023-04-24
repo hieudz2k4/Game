@@ -37,7 +37,7 @@ bool isStarting = false ;
 bool isHelping = false ;
 bool isQuitting = false ;
 bool endGame = false;
-
+bool playingMusic = true ;
 //text
 TTF_Font* font_time = nullptr;
 
@@ -119,6 +119,7 @@ private :
     float gravity, jumpVel ;
     int maxHeight,minHeight,x_pos,y_pos;
     int state ;
+    int frameDuration ;
     bool onGround ;
 public:
     Dino()
@@ -131,6 +132,7 @@ public:
         y_pos = minHeight ;
         state = 1 ;
         onGround = true ;
+        frameDuration = 100 ;
 
     }
     ~Dino(){} ;
@@ -139,18 +141,31 @@ public:
         //set lại vị trí hiển thị dino
         rect_.x = x_pos ;
         rect_.y = y_pos ;
+
+        int frameNum = 2 ;
+        SDL_Rect FrameRun[frameNum] ;
+        FrameRun[0] = {0,0,DINO_WIDTH,DINO_HEIGHT} ;
+        FrameRun[1] = {DINO_WIDTH,0,DINO_WIDTH,DINO_HEIGHT} ;
+
+        SDL_Rect FrameDown[frameNum] ;
+        FrameDown[0] = {0,0,DINO_WIDTH,32} ;
+        FrameDown[1] = {DINO_WIDTH,0,DINO_WIDTH,32} ;
+
+        int currentframe = (SDL_GetTicks()/frameDuration)%frameNum ;
         switch(state)
         {
-        case DOWN :
-            gDinoTexture = LoadTexture("Image//Dino//Dino_Down.png") ;
-            draw(grender, gDinoTexture,NULL);
-            break ;
         case DEAD:
             gDinoTexture = LoadTexture("Image//Dino//Dino_Dead.png");
             draw(grender, gDinoTexture,NULL);
             Mix_PlayChannel(-1,gDead,0) ;
             break;
-        case JUMP :
+         case RUN:
+            gDinoTexture = LoadTexture("Image//Dino//Dino_Run.png") ;
+            rect_.w = DINO_WIDTH ;
+            rect_.h = DINO_HEIGHT ;
+            draw(grender, gDinoTexture,&FrameRun[currentframe]);
+            break ;
+        case JUMP:
             gDinoTexture = LoadTexture("Image//Dino//Dino_Jump.png");
             Mix_PlayChannel(-1,gJump,0) ;
             if(rect_.y >= maxHeight)
@@ -162,17 +177,10 @@ public:
 
             }
             break ;
-        case RUN:
-            gDinoTexture = LoadTexture("Image//Dino//Dino_Run.png") ;
-            rect_.w = DINO_WIDTH ;
-            rect_.h = DINO_HEIGHT ;
-            int frameNum = 2 ;
-            int frameDuration = 100 ;
-            SDL_Rect Frame[frameNum] ;
-            Frame[0] = {0,0,DINO_WIDTH,DINO_HEIGHT} ;
-            Frame[1] = {DINO_WIDTH,0,DINO_WIDTH,DINO_HEIGHT} ;
-            int currentframe = (SDL_GetTicks()/frameDuration)%frameNum  ;
-            draw(grender, gDinoTexture,&Frame[currentframe]);
+        case DOWN:
+            gDinoTexture = LoadTexture("Image//Dino//Dino_Down.png") ;
+            setPos(x_pos, y_pos + 32) ;
+            draw(grender, gDinoTexture,&FrameDown[currentframe]);
             break ;
         }
         Free(gDinoTexture) ;
@@ -228,14 +236,7 @@ public:
 
         return false ;
     }
-    bool DinoOnGround()
-    {
-        if(rect_.y = minHeight)
-            onGround = true ;
-        else
-            onGround = false ;
-        return onGround ;
-    }
+    void setDuration(const int& x){frameDuration = x ;}
 };
 
 class Obstacle: public object
@@ -471,12 +472,7 @@ int main(int argc, char* argv[])
     int obstacley = SCREEN_HEIGHT-obstacleRect.h - 5 ;
     obstacle.setPos(obstaclex,obstacley)  ;
     */
-
-
-    //Obstacle airplane
-    //Obstacle airplane ;
-    //SDL_Texture* airplaneTexture = nullptr ;
-    //airplaneTexture = airplane.LoadTexture("Image//Obstacles//Ob17.png");
+    Obstacle airplane ;
 
     Text score_game ;
     score_game.setColor(Text::YELLOW);
@@ -487,9 +483,13 @@ int main(int argc, char* argv[])
 
     Uint32 timeValue;
     Uint32 scoreValue ;
+    //Mix_PlayMusic(gMenuMusic,-1) ;
     while(isRunning)
     {
-        //Mix_PlayMusic(gMenuMusic,-1) ;
+
+
+
+
         SDL_SetRenderDrawColor(grender, RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR) ;
         SDL_RenderClear(grender) ;
 
@@ -498,6 +498,7 @@ int main(int argc, char* argv[])
         //Menu
         if(loadMenu)
         {
+
             timeValue = SDL_GetTicks()/1000;
             object Menu;
             SDL_Texture* gMenu ;
@@ -588,21 +589,45 @@ int main(int argc, char* argv[])
             }
             //BackGround
             if(scoreValue<= 100)
+            {
                 Background.x_val -= 0.5 ;
+                dino.setDuration(140) ;
+            }
             else if(scoreValue<=200)
+            {
                 Background.x_val -= 0.7 ;
+                dino.setDuration(100) ;
+            }
             else if(scoreValue<=300)
+            {
                 Background.x_val -= 1 ;
+                dino.setDuration(90) ;
+            }
             else if(scoreValue<=400)
-                Background.x_val -= 1.3;
+            {
+                Background.x_val -= 1,5 ;
+                dino.setDuration(80) ;
+            }
             else if(timeValue<=500)
-                Background.x_val -= 1.7;
+            {
+                Background.x_val -= 1.7 ;
+                dino.setDuration(70) ;
+            }
             else if(scoreValue<=600)
+            {
                 Background.x_val -= 2 ;
+                dino.setDuration(60) ;
+            }
             else if(scoreValue<=750)
-                Background.x_val -= 4 ;
+            {
+                Background.x_val -= 3 ;
+                dino.setDuration(50) ;
+            }
             else
+            {
                 Background.x_val -= 5 ;
+                dino.setDuration(40) ;
+            }
 
             Background.setPos(Background.x_val, 0);
             Background.draw(grender , gBackgroundTexture,nullptr) ;
@@ -616,8 +641,8 @@ int main(int argc, char* argv[])
             //Dino
             dino.Show() ;
 
+            /*
             //airplane
-            Obstacle airplane ;
             SDL_Texture* airplaneTexture = nullptr ;
             airplaneTexture = airplane.LoadTexture("Image//Obstacles//Ob17.png");
             int airplaneRandomy = 350 + std::rand()%(530 - 350 + 1) ;
@@ -625,6 +650,7 @@ int main(int argc, char* argv[])
             airplane.draw(grender, airplaneTexture,nullptr) ;
             airplane.HandleMove(SCREEN_WIDTH, SCREEN_HEIGHT) ;
             airplane.Free(airplaneTexture) ;
+            */
 
             if(dino.checkCollision(obstacle.getRect()) == true || dino.checkCollision(airplane.getRect()) == true)
             {
@@ -782,6 +808,7 @@ int main(int argc, char* argv[])
         }
         SDL_RenderPresent(grender);
     }
+
 
     close();
     return 0 ;
