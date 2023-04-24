@@ -153,10 +153,13 @@ public:
         case JUMP :
             gDinoTexture = LoadTexture("Image//Dino//Dino_Jump.png");
             Mix_PlayChannel(-1,gJump,0) ;
-            while(rect_.y >= maxHeight)
+            if(rect_.y >= maxHeight)
             {
                 rect_.y -= 5 ;
-                draw(grender,gDinoTexture,nullptr);
+            }
+            else if(rect_.y <= maxHeight)
+            {
+
             }
             break ;
         case RUN:
@@ -246,7 +249,7 @@ public:
         rect_.y =0;
         rect_.w = 0 ;
         rect_.h = 0 ;
-        x_val = -1 ;
+        x_val = -2 ;
         y_val = 0 ;
     }
     ~Obstacle(){;}
@@ -342,6 +345,7 @@ private:
     int width ;
     int height ;
 };
+
 bool Init()
 {
     bool success = true ;
@@ -470,25 +474,31 @@ int main(int argc, char* argv[])
 
 
     //Obstacle airplane
-    Obstacle airplane ;
-    SDL_Texture* airplaneTexture = nullptr ;
-    airplaneTexture = airplane.LoadTexture("Image//Obstacles//Ob17.png");
+    //Obstacle airplane ;
+    //SDL_Texture* airplaneTexture = nullptr ;
+    //airplaneTexture = airplane.LoadTexture("Image//Obstacles//Ob17.png");
 
     Text score_game ;
     score_game.setColor(Text::YELLOW);
 
+    Text HighScore;
+    HighScore.setColor(Text::YELLOW) ;
+    HighScore.free() ;
+
+    Uint32 timeValue;
+    Uint32 scoreValue ;
     while(isRunning)
     {
         //Mix_PlayMusic(gMenuMusic,-1) ;
         SDL_SetRenderDrawColor(grender, RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR) ;
         SDL_RenderClear(grender) ;
 
-        Uint32 timeValue = SDL_GetTicks() / 1000;
         int mousePosx = gevent.motion.x ;
         int mousePosy = gevent.motion.y ;
         //Menu
         if(loadMenu)
         {
+            timeValue = SDL_GetTicks()/1000;
             object Menu;
             SDL_Texture* gMenu ;
             gMenu = Menu.LoadTexture("Image//Background//Menu1.png");
@@ -547,23 +557,6 @@ int main(int argc, char* argv[])
                         loadMenu = false ;
                     }
                 }
-                else if(gevent.type == SDL_MOUSEMOTION)
-                {
-                    if(buttonPlay.checkFocus(mousePosx,mousePosy) == true)
-                    {
-                        buttonPlay.setPos(0,0) ;
-
-                    }
-                    else if(buttonHelp.checkFocus(mousePosx,mousePosy) == true)
-                    {
-
-                    }
-                    else if(buttonExit.checkFocus(mousePosx,mousePosy) == true)
-                    {
-
-
-                    }
-                }
             }
             //Mix_PlayMusic(gMenuMusic,-1) ;
             buttonPlay.draw(grender,buttonPlayTexture,nullptr);
@@ -573,12 +566,10 @@ int main(int argc, char* argv[])
             buttonPlay.Free(buttonPlayTexture) ;
             buttonHelp.Free(buttonHelpTexture) ;
             buttonExit.Free(buttonExitTexture) ;
-
-
         }
         else if(isStarting)
         {
-            while(SDL_PollEvent(&gevent)!=0)
+            if(SDL_PollEvent(&gevent)!=0)
             {
                 if(gevent.type == SDL_QUIT)
                 {
@@ -596,20 +587,22 @@ int main(int argc, char* argv[])
                 dino.HandleEvent(gevent) ;
             }
             //BackGround
-            if(timeValue<= 15)
+            if(scoreValue<= 100)
                 Background.x_val -= 0.5 ;
-            else if(timeValue<=45)
+            else if(scoreValue<=200)
                 Background.x_val -= 0.7 ;
-            else if(timeValue<=75)
+            else if(scoreValue<=300)
                 Background.x_val -= 1 ;
-            else if(timeValue<=85)
+            else if(scoreValue<=400)
                 Background.x_val -= 1.3;
-            else if(timeValue<=95)
+            else if(timeValue<=500)
                 Background.x_val -= 1.7;
-            else if(timeValue<=105)
+            else if(scoreValue<=600)
                 Background.x_val -= 2 ;
-            else
+            else if(scoreValue<=750)
                 Background.x_val -= 4 ;
+            else
+                Background.x_val -= 5 ;
 
             Background.setPos(Background.x_val, 0);
             Background.draw(grender , gBackgroundTexture,nullptr) ;
@@ -624,36 +617,24 @@ int main(int argc, char* argv[])
             dino.Show() ;
 
             //airplane
-            airplane.setPos(SCREEN_WIDTH/2, SCREEN_HEIGHT/2) ;
+            Obstacle airplane ;
+            SDL_Texture* airplaneTexture = nullptr ;
+            airplaneTexture = airplane.LoadTexture("Image//Obstacles//Ob17.png");
+            int airplaneRandomy = 350 + std::rand()%(530 - 350 + 1) ;
+            airplane.setPos(SCREEN_WIDTH/10, airplaneRandomy) ;
             airplane.draw(grender, airplaneTexture,nullptr) ;
             airplane.HandleMove(SCREEN_WIDTH, SCREEN_HEIGHT) ;
             airplane.Free(airplaneTexture) ;
 
-            //Obstacles
-            std::string directory = "Image//Obstacles//" ;
-            std::string fileExtension = ".png" ;
-            std::srand(std::time(0));
-            int j = std::rand()%(16)+1 ;
-            std::string fileName = "Ob"+std::to_string(j) ;
-            std::string filePath = directory+fileName+fileExtension ;
-            //std::cout << filePath ;
-            gObstacleTexture = obstacle.LoadTexture(filePath) ;
-            int xRandom = std::rand()%(200+1) ;
-            SDL_Rect obstacleRect = obstacle.getRect() ;
-            int obstaclex = SCREEN_WIDTH - obstacleRect.w + xRandom ;
-            int obstacley = SCREEN_HEIGHT-obstacleRect.h - 10 ;
-            obstacle.setPos(obstaclex,obstacley)  ;
-            obstacle.draw(grender,gObstacleTexture,nullptr) ;
-
-
             if(dino.checkCollision(obstacle.getRect()) == true || dino.checkCollision(airplane.getRect()) == true)
             {
+                Mix_PlayChannel(-1, gDead,0) ;
                 endGame = true ;
                 isStarting = false ;
             }
             std::string stringScore = "Score: " ;
-            Uint32 scoreValue = 10*SDL_GetTicks()/1000 ;
-            if(scoreValue%100 == 0 )
+            scoreValue = 10*SDL_GetTicks()/1000 - 10*timeValue ;
+            if(scoreValue%100 == 0&&scoreValue!=0)
             {
                 Mix_PlayChannel(-1,gPoint,0) ;
             }
@@ -663,6 +644,7 @@ int main(int argc, char* argv[])
             score_game.LoadTextTexture(font_time,grender) ;
             score_game.showText(grender,SCREEN_WIDTH- 220,15,0) ;
             score_game.free() ;
+
         }
         else if(isHelping)
         {
@@ -735,15 +717,29 @@ int main(int argc, char* argv[])
                         isQuitting = false ;
                     }
                 }
-
             }
-
             quitObject.Free(quitObjectTexture) ;
             buttonYes.Free(buttonYesTexture) ;
             buttonNo.Free(buttonNoTexture) ;
         }
         else if(endGame)
         {
+            object gameOver ;
+            SDL_Texture* gameOverTexture = nullptr ;
+            gameOverTexture = gameOver.LoadTexture("Image//Background//GameOver.png") ;
+            gameOver.draw(grender,gameOverTexture,nullptr) ;
+            object buttonYes ;
+
+            SDL_Texture* buttonYesTexture = nullptr;
+            buttonYesTexture = buttonYes.LoadTexture("Image//Background//Yes.png") ;
+            buttonYes.setPos(SCREEN_WIDTH/2 - 250,SCREEN_HEIGHT/2) ;
+            buttonYes.draw(grender,buttonYesTexture,nullptr) ;
+
+            object buttonNo ;
+            SDL_Texture* buttonNoTexture = nullptr;
+            buttonNoTexture = buttonNo.LoadTexture("Image//Background//No.png") ;
+            buttonNo.setPos(SCREEN_WIDTH/2 + 100,SCREEN_HEIGHT/2) ;
+            buttonNo.draw(grender,buttonNoTexture,nullptr) ;
 
             while(SDL_PollEvent(&gevent)!=0)
             {
@@ -767,25 +763,21 @@ int main(int argc, char* argv[])
                 }
                 else if(gevent.type == SDL_MOUSEBUTTONDOWN || gevent.type == SDL_MOUSEBUTTONUP)
                 {
+                    if(buttonYes.checkFocus(mousePosx,mousePosy))
+                    {
+                        isStarting = true ;
+                        endGame = false ;
+                    }
+                    else if(buttonNo.checkFocus(mousePosx,mousePosy))
+                    {
+                        loadMenu = true ;
+                        endGame = false ;
+                    }
 
                 }
             }
-            object gameOver ;
-            SDL_Texture* gameOverTexture = nullptr ;
-            gameOverTexture = gameOver.LoadTexture("Image//Background//GameOver.png") ;
-            gameOver.draw(grender,gameOverTexture,nullptr) ;
             gameOver.Free(gameOverTexture) ;
-
-            object buttonYes ;
-            SDL_Texture* buttonYesTexture = nullptr;
-            buttonYesTexture = buttonYes.LoadTexture("Image//Background//Yes.png") ;
-            buttonYes.draw(grender,buttonYesTexture,nullptr) ;
             buttonYes.Free(buttonYesTexture) ;
-
-            object buttonNo ;
-            SDL_Texture* buttonNoTexture = nullptr;
-            buttonNoTexture = buttonNo.LoadTexture("Image//Background//No.png") ;
-            buttonNo.draw(grender,buttonNoTexture,nullptr) ;
             buttonNo.Free(buttonNoTexture) ;
         }
         SDL_RenderPresent(grender);
