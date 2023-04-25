@@ -237,6 +237,7 @@ public:
         return false ;
     }
     void setDuration(const int& x){frameDuration = x ;}
+    void setState(const int& x){state = x;}
 };
 
 class Obstacle: public object
@@ -486,10 +487,6 @@ int main(int argc, char* argv[])
     //Mix_PlayMusic(gMenuMusic,-1) ;
     while(isRunning)
     {
-
-
-
-
         SDL_SetRenderDrawColor(grender, RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR) ;
         SDL_RenderClear(grender) ;
 
@@ -499,11 +496,11 @@ int main(int argc, char* argv[])
         if(loadMenu)
         {
 
-            timeValue = SDL_GetTicks()/1000;
+            timeValue = SDL_GetTicks();
             object Menu;
-            SDL_Texture* gMenu ;
-            gMenu = Menu.LoadTexture("Image//Background//Menu1.png");
-            Menu.draw(grender,gMenu,nullptr) ;
+            SDL_Texture* menuTexture ;
+            menuTexture = Menu.LoadTexture("Image//Background//Menu1.png");
+            Menu.draw(grender,menuTexture,nullptr) ;
 
 
             object buttonPlay ;
@@ -522,11 +519,13 @@ int main(int argc, char* argv[])
             buttonExit.setPos(520,SCREEN_HEIGHT/2+200) ;
 
             //even
+            /*
             object buttonYes ;
             SDL_Texture* buttonYesTexture ;
             buttonYesTexture = buttonYes.LoadTexture("Image//Background//Yes1.png") ;
             buttonYes.draw(grender,buttonYesTexture,nullptr) ;
             buttonYes.Free(buttonYesTexture) ;
+            */
 
             //SDL_Event eventMenu ;
             while(SDL_PollEvent(&gevent)!=0)
@@ -563,7 +562,7 @@ int main(int argc, char* argv[])
             buttonPlay.draw(grender,buttonPlayTexture,nullptr);
             buttonHelp.draw(grender,buttonHelpTexture,nullptr);
             buttonExit.draw(grender,buttonExitTexture,nullptr);
-            Menu.Free(gMenu) ;
+            Menu.Free(menuTexture) ;
             buttonPlay.Free(buttonPlayTexture) ;
             buttonHelp.Free(buttonHelpTexture) ;
             buttonExit.Free(buttonExitTexture) ;
@@ -637,11 +636,8 @@ int main(int argc, char* argv[])
             {
                 Background.x_val=  0 ;
             }
-
             //Dino
             dino.Show() ;
-
-            /*
             //airplane
             SDL_Texture* airplaneTexture = nullptr ;
             airplaneTexture = airplane.LoadTexture("Image//Obstacles//Ob17.png");
@@ -650,7 +646,7 @@ int main(int argc, char* argv[])
             airplane.draw(grender, airplaneTexture,nullptr) ;
             airplane.HandleMove(SCREEN_WIDTH, SCREEN_HEIGHT) ;
             airplane.Free(airplaneTexture) ;
-            */
+
 
             if(dino.checkCollision(obstacle.getRect()) == true || dino.checkCollision(airplane.getRect()) == true)
             {
@@ -659,8 +655,8 @@ int main(int argc, char* argv[])
                 isStarting = false ;
             }
             std::string stringScore = "Score: " ;
-            scoreValue = 10*SDL_GetTicks()/1000 - 10*timeValue ;
-            if(scoreValue%100 == 0&&scoreValue!=0)
+            scoreValue = 10*SDL_GetTicks()/1000 - 10*timeValue/1000 ;
+            if(scoreValue%100==0&&scoreValue!=0)
             {
                 Mix_PlayChannel(-1,gPoint,0) ;
             }
@@ -792,11 +788,14 @@ int main(int argc, char* argv[])
                     if(buttonYes.checkFocus(mousePosx,mousePosy))
                     {
                         isStarting = true ;
+                        dino.setState(1) ;
+                        timeValue = SDL_GetTicks() ;
                         endGame = false ;
                     }
                     else if(buttonNo.checkFocus(mousePosx,mousePosy))
                     {
                         loadMenu = true ;
+                        dino.setState(1) ;
                         endGame = false ;
                     }
 
@@ -808,8 +807,6 @@ int main(int argc, char* argv[])
         }
         SDL_RenderPresent(grender);
     }
-
-
     close();
     return 0 ;
 }
