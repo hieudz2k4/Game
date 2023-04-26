@@ -117,7 +117,9 @@ public:
     void Free(SDL_Texture* texture)
     {
         SDL_DestroyTexture(objectTexture);
+        objectTexture = nullptr ;
         SDL_DestroyTexture(texture) ;
+        texture = nullptr ;
     }
 };
 
@@ -142,8 +144,8 @@ private :
 public:
     Dino()
     {
-        gravity = 2  ;
-        jumpVel = -1.8;
+        gravity = 1.6  ;
+        jumpVel = -1.4;
         maxHeight = SCREEN_HEIGHT - DINO_HEIGHT - 200 ;
         minHeight = SCREEN_HEIGHT - DINO_HEIGHT - 10 ;
         x_pos = 40 ;
@@ -705,67 +707,67 @@ int main(int argc, char* argv[])
             {
                 Background.x_val -= 1 ;
                 dino.setDuration(100) ;
-                dino.set_jumpVel_gravity(-1.2, 2.1);
-                airplane.setXVal(-1.2);
-                obstacle1.setXVal(-1.2) ;
-                obstacle2.setXVal(-1.2) ;
-                obstacle3.setXVal(-1.2) ;
+                dino.set_jumpVel_gravity(-1.6, 2.2);
+                airplane.setXVal(-3);
+                obstacle1.setXVal(-2) ;
+                obstacle2.setXVal(-2) ;
+                obstacle3.setXVal(-2) ;
             }
             else if(scoreValue<=300)
             {
                 Background.x_val -= 1.2 ;
                 dino.setDuration(90) ;
-                //dino.set_jumpVel_gravity();
-                airplane.setXVal(-1.4);
-                obstacle1.setXVal(-1.4) ;
-                obstacle2.setXVal(-1.4) ;
-                obstacle3.setXVal(-1.4) ;
+                dino.set_jumpVel_gravity(-1.8,2.4);
+                airplane.setXVal(-4);
+                obstacle1.setXVal(-3) ;
+                obstacle2.setXVal(-3) ;
+                obstacle3.setXVal(-3) ;
             }
             else if(scoreValue<=400)
             {
                 Background.x_val -= 1,4 ;
                 dino.setDuration(80) ;
-                //dino.set_jumpVel_gravity();
-                airplane.setXVal(-1.6);
-                obstacle1.setXVal(-1.6) ;
-                obstacle2.setXVal(-1.6) ;
-                obstacle3.setXVal(-1.6) ;
+                dino.set_jumpVel_gravity(-1.9, 2.5);
+                airplane.setXVal(-5);
+                obstacle1.setXVal(-3) ;
+                obstacle2.setXVal(-3) ;
+                obstacle3.setXVal(-3) ;
             }
             else if(timeValue<=500)
             {
                 Background.x_val -= 1.7 ;
                 dino.setDuration(70) ;
-                //dino.set_jumpVel_gravity();
-                airplane.setXVal(-1.8);
-                obstacle1.setXVal(-1.8) ;
-                obstacle2.setXVal(-1.8) ;
-                obstacle3.setXVal(-1.8) ;
+                dino.set_jumpVel_gravity(-2, 2.6);
+                airplane.setXVal(-6);
+                obstacle1.setXVal(-3) ;
+                obstacle2.setXVal(-3) ;
+                obstacle3.setXVal(-3) ;
             }
             else if(scoreValue<=600)
             {
                 Background.x_val -= 1.9 ;
                 dino.setDuration(60) ;
-                //dino.set_jumpVel_gravity();
-                airplane.setXVal(-2);
-                obstacle1.setXVal(-2) ;
-                obstacle2.setXVal(-2) ;
-                obstacle3.setXVal(-2) ;
+                dino.set_jumpVel_gravity(-2.1, 3);
+                airplane.setXVal(-6);
+                obstacle1.setXVal(-4) ;
+                obstacle2.setXVal(-4) ;
+                obstacle3.setXVal(-4) ;
             }
             else if(scoreValue<=750)
             {
                 Background.x_val -= 2 ;
                 dino.setDuration(50) ;
-                //dino.set_jumpVel_gravity();
+                dino.set_jumpVel_gravity(-2.2, 3.2);
             }
             else
             {
                 Background.x_val -= 3 ;
                 dino.setDuration(40) ;
-                //dino.set_jumpVel_gravity();
-                airplane.setXVal(-2.4);
-                obstacle1.setXVal(-2.4) ;
-                obstacle2.setXVal(-2.4) ;
-                obstacle3.setXVal(-2.4) ;
+                dino.set_jumpVel_gravity(-3,5);
+                airplane.setXVal(-7);
+                obstacle1.setXVal(-5) ;
+                obstacle2.setXVal(-5) ;
+                obstacle3.setXVal(-5) ;
             }
 
             Background.setPos(Background.x_val, 0);
@@ -781,19 +783,19 @@ int main(int argc, char* argv[])
 
             //obstacle
 
-            int randomX = 500 + std::rand()%(10000 - 500 + 1 ) ;
-            obstacle1.HandleMove(1200,SCREEN_HEIGHT - obstacleRect1.h) ;
+            int randomX  = 300 + std::rand()%(400-300+1) ;
+            obstacle1.HandleMove(2700 ,SCREEN_HEIGHT - obstacleRect1.h) ;
             obstacle1.draw(grender,gObstacleTexture1,nullptr) ;
 
-            obstacle2.HandleMove(8000,SCREEN_HEIGHT - obstacleRect2.h) ;
+            obstacle2.HandleMove(1700 ,SCREEN_HEIGHT - obstacleRect2.h) ;
             obstacle2.draw(grender,gObstacleTexture2,nullptr) ;
 
-            obstacle3.HandleMove(2500,SCREEN_HEIGHT - obstacleRect3.h) ;
+            obstacle3.HandleMove(3700,SCREEN_HEIGHT - obstacleRect3.h) ;
             obstacle3.draw(grender,gObstacleTexture3,nullptr) ;
 
             //airplane
             int randomYAirplane = 450 + std::rand()%(470-450 + 1) ;
-            airplane.HandleMove(5000,randomYAirplane);
+            airplane.HandleMove(1300,randomYAirplane);
             airplane.draw(grender, airplaneTexture,nullptr) ;
             airplane.Free(airplaneTexture) ;
 
@@ -972,19 +974,21 @@ int main(int argc, char* argv[])
                 {
                     if(buttonYes.checkFocus(mousePosx,mousePosy))
                     {
+                        Mix_PlayChannel(-1, gClick,0) ;
                         isStarting = true ;
                         dino.setState(1) ;
                         timeValue = SDL_GetTicks() ;
                         endGame = false ;
-                        airplane.setPos(SCREEN_WIDTH , SCREEN_HEIGHT * 0.7) ;
-                        obstacle1.setPos(SCREEN_WIDTH + randomX, SCREEN_HEIGHT - obstacleRect1.h - 10);
-                        obstacle2.setPos(SCREEN_WIDTH + 3*randomX, SCREEN_HEIGHT - obstacleRect2.h - 10);
-                        obstacle3.setPos(SCREEN_WIDTH + 2*randomX, SCREEN_HEIGHT - obstacleRect3.h - 10);
+                        airplane.setPos(SCREEN_WIDTH +5*randomX , SCREEN_HEIGHT * 0.7) ;
+                        obstacle1.setPos(SCREEN_WIDTH + 3*randomX, SCREEN_HEIGHT - obstacleRect1.h - 10);
+                        obstacle2.setPos(SCREEN_WIDTH + 2*randomX, SCREEN_HEIGHT - obstacleRect2.h - 10);
+                        obstacle3.setPos(SCREEN_WIDTH + randomX, SCREEN_HEIGHT - obstacleRect3.h - 10);
                         numberPlay++;
 
                     }
                     else if(buttonNo.checkFocus(mousePosx,mousePosy))
                     {
+                        Mix_PlayChannel(-1,gClick,0);
                         loadMenu = true ;
                         dino.setState(1) ;
                         endGame = false ;
