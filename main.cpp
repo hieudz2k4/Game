@@ -1,10 +1,11 @@
+//Khai bao thu vien
 #include <bits/stdc++.h>
 #include <SDL_image.h>
 #include <SDL.h>
 #include <SDL_mixer.h>
 #include <SDL_ttf.h>
 
-//KHAI BAO CAC THONG SO CO DINH
+//khai bao cac thong so co dinh
 const int SCREEN_HEIGHT = 600 ;
 const int SCREEN_WIDTH = 1200;
 const int FRAME = 60 ;
@@ -14,23 +15,25 @@ const int COLOR_KEY_R = 167;
 const int COLOR_KEY_G = 175 ;
 const int COLOR_KEY_B = 180 ;
 const int RENDER_DRAW_COLOR = 255 ;
-const int FPS = 60 ;
-const int MAX_OBSTACLES = 3 ;
 
+//khai bao cac bien sdl
 SDL_Window* gwindow  = nullptr ;
 SDL_Renderer* grender = nullptr ;
 SDL_Texture* gDinoTexture = nullptr ;
 SDL_Texture* gBackgroundTexture = nullptr ;
-SDL_Texture* gObstacleTexture = nullptr ;
+SDL_Texture* gObstacleTexture1 = nullptr ;
+SDL_Texture* gObstacleTexture2 = nullptr ;
+SDL_Texture* gObstacleTexture3 = nullptr ;
 SDL_Event gevent ;
 
-//âm thanh
+//am thanh
 Mix_Music* gMenuMusic = nullptr ;
 Mix_Chunk* gJump = nullptr ;
 Mix_Chunk* gDead = nullptr ;
 Mix_Chunk* gPoint = nullptr ;
 Mix_Chunk* gClick = nullptr ;
 
+//cac bien bool xu ly
 bool isRunning = true ;
 bool loadMenu = true ;
 bool isStarting = false ;
@@ -38,14 +41,20 @@ bool isHelping = false ;
 bool isQuitting = false ;
 bool endGame = false;
 bool playingMusic = true ;
+
 //text
 TTF_Font* font_time = nullptr;
 
+//tao lop object
 class object
 {
 protected :
+    //luu kich thuoc va vi tri hien thi cua buc anh
     SDL_Rect rect_ ;
+    //luu thong so tam anh
+    SDL_Texture* objectTexture;
 public:
+    //toc do di chuyen len xuong
     float x_val, y_val ;
     object()
     {
@@ -53,45 +62,49 @@ public:
         rect_.y = 0 ;
         rect_.w = 0 ;
         rect_.h = 0 ;
+        objectTexture = nullptr ;
         x_val = 0 ;
         y_val = 0 ;
+
     };
     ~object(){};
-    void setPos(const int& x, const int& y){rect_.x = x ; rect_.y = y ;}
-    void setSize(const int& x, const int& y){rect_.w = x ; rect_.h = y;}
+    //phuong thuc de cai dat vi tri
+    void setPos(const int& xpos, const int& ypos){rect_.x = xpos ; rect_.y = ypos ;}
+    //phuong thuc cai dat size cho tam anh
+    void setSize(const int& width, const int& height){rect_.w = width ; rect_.h = height;}
+    //phuong thuc lay kich thuoc tam anh
     SDL_Rect getRect() const{return rect_ ;}
+    //phuong thuc load texture tam anh
     SDL_Texture* LoadTexture(std::string path)
     {
-        SDL_Texture* new_texture = nullptr ;
-
-    //DOC TAM ANH THANH SURFACE
+        //DOC TAM ANH THANH SURFACE
         SDL_Surface* loadsurface = IMG_Load(path.c_str()) ;
         if(loadsurface != NULL)
         {
-        //TRANPARENCE BACKGROUND
-        SDL_SetColorKey(loadsurface, SDL_TRUE,SDL_MapRGB(loadsurface->format ,COLOR_KEY_R,COLOR_KEY_G,COLOR_KEY_B)) ;
+            //TRANPARENCE BACKGROUND
+            SDL_SetColorKey(loadsurface, SDL_TRUE,SDL_MapRGB(loadsurface->format ,COLOR_KEY_R,COLOR_KEY_G,COLOR_KEY_B)) ;
 
-        //CHUYEN SURFACE THANH TEXTURE LUU DU TAT CA THONG TIN VE TAM ANH
-        new_texture = SDL_CreateTextureFromSurface(grender, loadsurface) ;
-        if(new_texture != nullptr)
-        {
-            rect_.w = loadsurface->w ;
-            rect_.h = loadsurface->h ;
+            //CHUYEN SURFACE THANH TEXTURE LUU DU TAT CA THONG TIN VE TAM ANH
+            objectTexture = SDL_CreateTextureFromSurface(grender, loadsurface) ;
+            if(objectTexture != nullptr)
+            {
+                rect_.w = loadsurface->w ;
+                rect_.h = loadsurface->h ;
+            }
+
+            //FREE(XOA) SURFACE
+            SDL_FreeSurface(loadsurface) ;
         }
-
-        //FREE(XOA) SURFACE
-        SDL_FreeSurface(loadsurface) ;
-        }
-        return new_texture;
-        SDL_DestroyTexture(new_texture) ;
-
+        return objectTexture;
     }
+    // phuong thuc de ve doi tuong
     void draw(SDL_Renderer* render,SDL_Texture* texture,const SDL_Rect* srcRect)
     {
         SDL_Rect renderquad = {rect_.x,rect_.y,rect_.w,rect_.h} ;
         //DAY DOI TUONG LEN MAN HINH
         SDL_RenderCopy(render,texture,srcRect,&renderquad) ;
     }
+    // phuong thuc checkfocus de xu ly button
     bool checkFocus(const int& x , const int& y)
     {
         if(x >= rect_.x && x <= rect_.x + rect_.w&&
@@ -100,21 +113,26 @@ public:
         return false ;
 
     }
+    //phuong thuc giai phong texture
     void Free(SDL_Texture* texture)
     {
+        SDL_DestroyTexture(objectTexture);
         SDL_DestroyTexture(texture) ;
     }
 };
 
+//tao lop main object: dino ke thua tu lop object
 class Dino:public object
 {
 private :
+    //trang thai doi tuong
     enum DinoState
     {
         DEAD = 0 ,
         RUN = 1 ,
         JUMP = 2 ,
-        DOWN = 3
+        DOWN = 3,
+        FALL = 4
     };
     float gravity, jumpVel ;
     int maxHeight,minHeight,x_pos,y_pos;
@@ -124,11 +142,11 @@ private :
 public:
     Dino()
     {
-        gravity = 20 ;
-        jumpVel = -DINO_HEIGHT;
+        gravity = 2  ;
+        jumpVel = -1.8;
         maxHeight = SCREEN_HEIGHT - DINO_HEIGHT - 200 ;
         minHeight = SCREEN_HEIGHT - DINO_HEIGHT - 10 ;
-        x_pos = 20 ;
+        x_pos = 40 ;
         y_pos = minHeight ;
         state = 1 ;
         onGround = true ;
@@ -136,6 +154,7 @@ public:
 
     }
     ~Dino(){} ;
+    //hien thi doi tuong dino
     void Show()
     {
         //set lại vị trí hiển thị dino
@@ -158,6 +177,7 @@ public:
             gDinoTexture = LoadTexture("Image//Dino//Dino_Dead.png");
             draw(grender, gDinoTexture,NULL);
             Mix_PlayChannel(-1,gDead,0) ;
+
             break;
          case RUN:
             gDinoTexture = LoadTexture("Image//Dino//Dino_Run.png") ;
@@ -167,48 +187,91 @@ public:
             break ;
         case JUMP:
             gDinoTexture = LoadTexture("Image//Dino//Dino_Jump.png");
-            Mix_PlayChannel(-1,gJump,0) ;
-            if(rect_.y >= maxHeight)
+            y_pos += jumpVel ;
+            if(y_pos < maxHeight )
             {
-                rect_.y -= 5 ;
+                state = FALL ;
+                y_pos = maxHeight;
             }
-            else if(rect_.y <= maxHeight)
+            if(y_pos == minHeight+jumpVel)
             {
-
+                Mix_PlayChannel(-1,gJump,0) ;
             }
+            draw(grender,gDinoTexture,nullptr) ;
             break ;
         case DOWN:
             gDinoTexture = LoadTexture("Image//Dino//Dino_Down.png") ;
-            setPos(x_pos, y_pos + 32) ;
+            //if(x_pos<minHeight)
+            //{
+                //state = FALL ;
+            //}
+            setPos(40, minHeight+32) ;
             draw(grender, gDinoTexture,&FrameDown[currentframe]);
+            break ;
+        case FALL :
+            gDinoTexture = LoadTexture("Image//Dino//Dino_Jump.png");
+            y_pos += gravity ;
+            if(y_pos > minHeight)
+            {
+                y_pos = minHeight ;
+                state = RUN ;
+            }
+            draw(grender,gDinoTexture,nullptr);
             break ;
         }
         Free(gDinoTexture) ;
     }
+    //phuong thuc xu ly su kien voi dino
     void HandleEvent(SDL_Event event)
     {
-        if(event.type==SDL_KEYDOWN)
+           if(event.type==SDL_KEYDOWN)
         {
-            if(event.key.keysym.sym == SDLK_SPACE || event.key.keysym.sym ==SDLK_UP)
+            if((event.key.keysym.sym == SDLK_SPACE|| event.key.keysym.sym ==SDLK_UP) && state == RUN)
                 state = JUMP ;
-            else if(event.key.keysym.sym ==SDLK_DOWN)
-                state = DOWN ;
+            else if(event.key.keysym.sym ==SDLK_DOWN )
+            {
+                if(state == JUMP)
+                {
+                    state = JUMP ;
+                }
+                else if(state == FALL)
+                {
+                    state == FALL ;
+                }
+                else
+                {
+                    state = DOWN ;
+
+                }
+            }
+
         }
         else if (event.type==SDL_KEYUP)
         {
-            if(event.key.keysym.sym == SDLK_SPACE || event.key.keysym.sym ==SDLK_UP)
+            if((event.key.keysym.sym == SDLK_SPACE || event.key.keysym.sym ==SDLK_UP) && state == RUN)
             {
                 state = JUMP ;
-                state = RUN ;
             }
             else if(event.key.keysym.sym ==SDLK_DOWN)
             {
-                state = DOWN ;
-                state = RUN ;
+                if(state == JUMP)
+                {
+                    state = JUMP ;
+                }
+                else if(state == FALL)
+                {
+                    state == FALL ;
+                }
+                else
+                {
+                    state = DOWN ;
+                    state = RUN ;
+                }
             }
         }
 
     }
+    //phuong thuc check va cham voi chuong ngai vat
     bool checkCollision(const SDL_Rect& obstacleRect)
     {
         int dinoLeft = rect_.x;
@@ -221,14 +284,14 @@ public:
         int obstacleTop = obstacleRect.y;
         int obstacleBottom = obstacleRect.y + obstacleRect.w;
 
-        if (dinoRight > obstacleLeft && dinoLeft < obstacleRight &&
-        dinoBottom > obstacleTop && dinoTop < obstacleBottom)
+        if (dinoRight > obstacleLeft+20 && dinoLeft < obstacleRight-20 &&
+        dinoBottom > obstacleTop+20 && dinoTop < obstacleBottom-20)
         {
             state = DEAD ;
             return true; // Có va chạm
         }
-        if (dinoRight > obstacleLeft && dinoLeft < obstacleRight &&
-        dinoBottom > obstacleTop && dinoTop < obstacleBottom)
+        if (dinoRight > obstacleLeft+20 && dinoLeft < obstacleRight-20 &&
+        dinoBottom > obstacleTop+20 && dinoTop < obstacleBottom-20)
         {
             state = DEAD ;
             return true;
@@ -236,10 +299,26 @@ public:
 
         return false ;
     }
+    //phuong thuc kiem tra xem co dang o mat dat khong
+    bool checkOnGround()
+    {
+        if(rect_.y == minHeight)
+        {
+            return true ;
+        }
+        else return false ;
+    }
+    //phuong thuc xet duration
     void setDuration(const int& x){frameDuration = x ;}
+    //phuong thuc cai dat trang thai dino
     void setState(const int& x){state = x;}
+    //phuong thuc cai dat xpos ypos
+    void setXYPos(const int& newXPos , const int& newYPos){x_pos = newXPos; y_pos = newYPos ;}
+    //phuong thuc cai dat jumpVel, gravity
+    void set_jumpVel_gravity(const int& jumpVelNew, const int& gravityNew){jumpVel = jumpVelNew; gravity = gravityNew ;}
 };
 
+//tao lop obstacle ke thua tu lop object
 class Obstacle: public object
 {
 private:
@@ -247,27 +326,30 @@ private:
 public:
     Obstacle()
     {
-        rect_.x =0;
+        rect_.x =SCREEN_WIDTH;
         rect_.y =0;
         rect_.w = 0 ;
         rect_.h = 0 ;
-        x_val = -2 ;
+        x_val = -1 ;
         y_val = 0 ;
     }
     ~Obstacle(){;}
-    void HandleMove(const int& x_border, const int& y_border)
+    //phuong thuc xu ly di chuyen
+    void HandleMove(const int& x_pos, const int& y_pos)
     {
         rect_.x += x_val ;
-        if(rect_.x < 0 )
+        if(rect_.x < -rect_.w)
         {
-            rect_.x = SCREEN_WIDTH ;
+            setPos(x_pos,y_pos);
         }
     }
     void HandleInputAction(SDL_Event event);
+    //phuong thuc cai dat toc do di chuyen obstacle
     void setXVal(const int& newXVal){x_val = newXVal ; }
 
 };
 
+//lop text
 class Text
 {
 public:
@@ -287,6 +369,7 @@ public:
         textTexture =nullptr ;
     }
     ~Text(){}
+    //phuong thuc load texture cua text
     void LoadTextTexture(TTF_Font* font, SDL_Renderer* render)
     {
         SDL_Surface* textSurface = TTF_RenderText_Solid(font, stringText.c_str(), colorText);
@@ -299,11 +382,13 @@ public:
         }
         else std::cout << "loi textSurface";
     }
+    //phuong thuc giai phong texture cua text
     void free()
     {
         SDL_DestroyTexture(textTexture) ;
         textTexture = nullptr ;
     }
+    //phuong thuc cai dat mau cho chu
     void setColor(int type)
     {
         if(type == RED)
@@ -332,7 +417,9 @@ public:
             colorText = color ;
         }
     }
+    //phuong thuc cai dat chuoi text
     void setText(const std::string& text){stringText= text ; }
+    //phuong thuc show text
     void showText(SDL_Renderer* render, int xp, int yp, double tiltAngle)
     {
         SDL_Rect rectText = {xp,yp,width,height} ;
@@ -348,8 +435,10 @@ private:
     int height ;
 };
 
+//ham khoi tao
 bool Init()
 {
+    //tao bien kiem tra ,khoi tao window, render
     bool success = true ;
     //khoi tao
     int ret = SDL_Init(SDL_INIT_VIDEO) ;
@@ -388,6 +477,7 @@ bool Init()
         }
     }
 
+    //load am thanh
     if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT,2,4096) == -1)
     {
         std::cout << "Lỗi âm thanh" ;
@@ -404,7 +494,7 @@ bool Init()
         success = false ;
     }
 
-
+    //load text
     if(TTF_Init()== -1)
     {
         std::cout << "loi TTF_Init()" ;
@@ -423,6 +513,7 @@ bool Init()
     return success ;
 }
 
+//ham giai phong bo nho
 void close()
 {
     SDL_DestroyWindow(gwindow) ;
@@ -433,8 +524,16 @@ void close()
     gBackgroundTexture = nullptr ;
     SDL_DestroyTexture(gDinoTexture) ;
     gDinoTexture = nullptr ;
-    SDL_DestroyTexture(gObstacleTexture) ;
-    gObstacleTexture = nullptr ;
+
+    SDL_DestroyTexture(gObstacleTexture1) ;
+    gObstacleTexture1 = nullptr ;
+
+    SDL_DestroyTexture(gObstacleTexture2) ;
+    gObstacleTexture2 = nullptr ;
+
+    SDL_DestroyTexture(gObstacleTexture3) ;
+    gObstacleTexture3 = nullptr ;
+
     Mix_FreeChunk(gClick);
     gClick = nullptr ;
     Mix_FreeChunk(gJump) ;
@@ -446,34 +545,48 @@ void close()
     IMG_Quit() ;
     SDL_QUIT;
 }
+
+//ham main
 int main(int argc, char* argv[])
 {
     if(Init()==false)
         std::cout << "Khoi tao khong thanh cong" ;
     //Background
     object Background ;
-    gBackgroundTexture = Background.LoadTexture("Image//Background//city1.png") ;
+    gBackgroundTexture = Background.LoadTexture("Image//Background//Background.png") ;
     //Dino
     Dino dino ;
 
-    //Obstacles
-    Obstacle obstacle ;
-    //sinh ra path file ngẫu nhiên
+    //Obstacle
+    Obstacle obstacle1;
+    gObstacleTexture1 = obstacle1.LoadTexture("Image//Obstacles//Ob4.png") ;
+    SDL_Rect obstacleRect1 = obstacle1.getRect() ;
+    obstacle1.setPos(SCREEN_WIDTH+ 500,SCREEN_HEIGHT-obstacleRect1.h);
+
+
+    Obstacle obstacle2 ;
+    gObstacleTexture2 = obstacle2.LoadTexture("Image//Obstacles//Ob11.png") ;
+    SDL_Rect obstacleRect2 = obstacle2.getRect() ;
+    obstacle2.setPos(SCREEN_WIDTH + 1000,SCREEN_HEIGHT-obstacleRect2.h);
+
+    Obstacle obstacle3 ;
+    gObstacleTexture3 = obstacle3.LoadTexture("Image//Obstacles//Ob16.png") ;
+    SDL_Rect obstacleRect3 = obstacle3.getRect() ;
+    obstacle3.setPos(SCREEN_WIDTH+2000,SCREEN_HEIGHT-obstacleRect3.h);
+
     /*
-    std::string directory = "Image//Obstacles//" ;
-    std::string fileExtension = ".png" ;
-    std::srand(std::time(0));
-    int i = std::rand()%(16)+1 ;
-    std::string fileName = "Ob"+std::to_string(i) ;
+    int randomFile = std::rand()%(16)+1 ;
+    std::string fileName = "Ob"+std::to_string(randomFile) ;
     std::string filePath = directory+fileName+fileExtension ;
-    std::cout << filePath ;
-    gObstacleTexture = obstacle.LoadTexture(filePath) ;
-    SDL_Rect obstacleRect = obstacle.getRect() ;
-    int obstaclex = SCREEN_WIDTH - obstacleRect.w ;
-    int obstacley = SCREEN_HEIGHT-obstacleRect.h - 5 ;
-    obstacle.setPos(obstaclex,obstacley)  ;
+    //std::cout << filePath ;
+    //gObstacleTexture = obstacle.LoadTexture(filePath) ;
+    //SDL_Rect obstacleRect = obstacle.getRect();
+    //obstacle.setPos(SCREEN_WIDTH, SCREEN_HEIGHT - obstacleRect.h - 10) ;
     */
-    Obstacle airplane ;
+
+    Obstacle airplane;
+    SDL_Texture* airplaneTexture = nullptr ;
+    airplane.setPos(SCREEN_WIDTH, SCREEN_HEIGHT*0.7) ;
 
     Text score_game ;
     score_game.setColor(Text::YELLOW);
@@ -484,48 +597,41 @@ int main(int argc, char* argv[])
 
     Uint32 timeValue;
     Uint32 scoreValue ;
+
+    int numberPlay = 0 ;
+    std::vector<int>scoreVector ;
+
     //Mix_PlayMusic(gMenuMusic,-1) ;
     while(isRunning)
     {
         SDL_SetRenderDrawColor(grender, RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR,RENDER_DRAW_COLOR) ;
         SDL_RenderClear(grender) ;
-
         int mousePosx = gevent.motion.x ;
         int mousePosy = gevent.motion.y ;
         //Menu
         if(loadMenu)
         {
-
             timeValue = SDL_GetTicks();
             object Menu;
-            SDL_Texture* menuTexture ;
+            SDL_Texture* menuTexture;
             menuTexture = Menu.LoadTexture("Image//Background//Menu1.png");
             Menu.draw(grender,menuTexture,nullptr) ;
 
 
             object buttonPlay ;
-            SDL_Texture* buttonPlayTexture ;
+            SDL_Texture* buttonPlayTexture;
             buttonPlayTexture = buttonPlay.LoadTexture("Image//Background//Play1.png") ;
             buttonPlay.setPos(520,SCREEN_HEIGHT/2) ;
 
             object buttonHelp;
-            SDL_Texture* buttonHelpTexture ;
+            SDL_Texture* buttonHelpTexture;
             buttonHelpTexture = buttonHelp.LoadTexture("Image//Background//Help1.png") ;
             buttonHelp.setPos(520,SCREEN_HEIGHT/2 + 100) ;
 
             object buttonExit ;
-            SDL_Texture* buttonExitTexture ;
+            SDL_Texture* buttonExitTexture = nullptr ;
             buttonExitTexture = buttonExit.LoadTexture("Image//Background//Quit1.png") ;
             buttonExit.setPos(520,SCREEN_HEIGHT/2+200) ;
-
-            //even
-            /*
-            object buttonYes ;
-            SDL_Texture* buttonYesTexture ;
-            buttonYesTexture = buttonYes.LoadTexture("Image//Background//Yes1.png") ;
-            buttonYes.draw(grender,buttonYesTexture,nullptr) ;
-            buttonYes.Free(buttonYesTexture) ;
-            */
 
             //SDL_Event eventMenu ;
             while(SDL_PollEvent(&gevent)!=0)
@@ -569,6 +675,9 @@ int main(int argc, char* argv[])
         }
         else if(isStarting)
         {
+            airplaneTexture = airplane.LoadTexture("Image//Obstacles//Ob17.png");
+            SDL_Rect airplaneRect = airplane.getRect();
+
             if(SDL_PollEvent(&gevent)!=0)
             {
                 if(gevent.type == SDL_QUIT)
@@ -589,70 +698,120 @@ int main(int argc, char* argv[])
             //BackGround
             if(scoreValue<= 100)
             {
-                Background.x_val -= 0.5 ;
+                Background.x_val -= 0.4 ;
                 dino.setDuration(140) ;
             }
             else if(scoreValue<=200)
             {
-                Background.x_val -= 0.7 ;
+                Background.x_val -= 1 ;
                 dino.setDuration(100) ;
+                dino.set_jumpVel_gravity(-1.2, 2.1);
+                airplane.setXVal(-1.2);
+                obstacle1.setXVal(-1.2) ;
+                obstacle2.setXVal(-1.2) ;
+                obstacle3.setXVal(-1.2) ;
             }
             else if(scoreValue<=300)
             {
-                Background.x_val -= 1 ;
+                Background.x_val -= 1.2 ;
                 dino.setDuration(90) ;
+                //dino.set_jumpVel_gravity();
+                airplane.setXVal(-1.4);
+                obstacle1.setXVal(-1.4) ;
+                obstacle2.setXVal(-1.4) ;
+                obstacle3.setXVal(-1.4) ;
             }
             else if(scoreValue<=400)
             {
-                Background.x_val -= 1,5 ;
+                Background.x_val -= 1,4 ;
                 dino.setDuration(80) ;
+                //dino.set_jumpVel_gravity();
+                airplane.setXVal(-1.6);
+                obstacle1.setXVal(-1.6) ;
+                obstacle2.setXVal(-1.6) ;
+                obstacle3.setXVal(-1.6) ;
             }
             else if(timeValue<=500)
             {
                 Background.x_val -= 1.7 ;
                 dino.setDuration(70) ;
+                //dino.set_jumpVel_gravity();
+                airplane.setXVal(-1.8);
+                obstacle1.setXVal(-1.8) ;
+                obstacle2.setXVal(-1.8) ;
+                obstacle3.setXVal(-1.8) ;
             }
             else if(scoreValue<=600)
             {
-                Background.x_val -= 2 ;
+                Background.x_val -= 1.9 ;
                 dino.setDuration(60) ;
+                //dino.set_jumpVel_gravity();
+                airplane.setXVal(-2);
+                obstacle1.setXVal(-2) ;
+                obstacle2.setXVal(-2) ;
+                obstacle3.setXVal(-2) ;
             }
             else if(scoreValue<=750)
             {
-                Background.x_val -= 3 ;
+                Background.x_val -= 2 ;
                 dino.setDuration(50) ;
+                //dino.set_jumpVel_gravity();
             }
             else
             {
-                Background.x_val -= 5 ;
+                Background.x_val -= 3 ;
                 dino.setDuration(40) ;
+                //dino.set_jumpVel_gravity();
+                airplane.setXVal(-2.4);
+                obstacle1.setXVal(-2.4) ;
+                obstacle2.setXVal(-2.4) ;
+                obstacle3.setXVal(-2.4) ;
             }
 
             Background.setPos(Background.x_val, 0);
             Background.draw(grender , gBackgroundTexture,nullptr) ;
-            Background.setPos(Background.x_val+SCREEN_WIDTH,0) ;
+            Background.setPos(Background.x_val + SCREEN_WIDTH,0) ;
             Background.draw(grender, gBackgroundTexture,nullptr) ;
-            if(Background.x_val <= -SCREEN_WIDTH)
+            if(Background.x_val <= -3*SCREEN_WIDTH)
             {
                 Background.x_val=  0 ;
             }
             //Dino
             dino.Show() ;
+
+            //obstacle
+
+            int randomX = 500 + std::rand()%(10000 - 500 + 1 ) ;
+            obstacle1.HandleMove(1200,SCREEN_HEIGHT - obstacleRect1.h) ;
+            obstacle1.draw(grender,gObstacleTexture1,nullptr) ;
+
+            obstacle2.HandleMove(8000,SCREEN_HEIGHT - obstacleRect2.h) ;
+            obstacle2.draw(grender,gObstacleTexture2,nullptr) ;
+
+            obstacle3.HandleMove(2500,SCREEN_HEIGHT - obstacleRect3.h) ;
+            obstacle3.draw(grender,gObstacleTexture3,nullptr) ;
+
             //airplane
-            SDL_Texture* airplaneTexture = nullptr ;
-            airplaneTexture = airplane.LoadTexture("Image//Obstacles//Ob17.png");
-            int airplaneRandomy = 350 + std::rand()%(530 - 350 + 1) ;
-            airplane.setPos(SCREEN_WIDTH/10, airplaneRandomy) ;
+            int randomYAirplane = 450 + std::rand()%(470-450 + 1) ;
+            airplane.HandleMove(5000,randomYAirplane);
             airplane.draw(grender, airplaneTexture,nullptr) ;
-            airplane.HandleMove(SCREEN_WIDTH, SCREEN_HEIGHT) ;
             airplane.Free(airplaneTexture) ;
 
 
-            if(dino.checkCollision(obstacle.getRect()) == true || dino.checkCollision(airplane.getRect()) == true)
+            if(dino.checkCollision(obstacle1.getRect()) == true|| dino.checkCollision(obstacle2.getRect()) == true|| dino.checkCollision(obstacle3.getRect()) == true||  dino.checkCollision(airplane.getRect()) == true)
             {
                 Mix_PlayChannel(-1, gDead,0) ;
                 endGame = true ;
                 isStarting = false ;
+
+                dino.setXYPos(40,SCREEN_HEIGHT-DINO_HEIGHT-10) ;
+                airplane.setPos(SCREEN_WIDTH,SCREEN_HEIGHT*0.7) ;
+
+                obstacle1.setPos(SCREEN_WIDTH + 2*randomX,SCREEN_HEIGHT-obstacleRect1.h) ;
+                obstacle2.setPos(SCREEN_WIDTH + 3*randomX,SCREEN_HEIGHT-obstacleRect2.h) ;
+                obstacle3.setPos(SCREEN_WIDTH+ 4*randomX,SCREEN_HEIGHT-obstacleRect3.h) ;
+
+                SDL_Delay(100) ;
             }
             std::string stringScore = "Score: " ;
             scoreValue = 10*SDL_GetTicks()/1000 - 10*timeValue/1000 ;
@@ -666,6 +825,17 @@ int main(int argc, char* argv[])
             score_game.LoadTextTexture(font_time,grender) ;
             score_game.showText(grender,SCREEN_WIDTH- 220,15,0) ;
             score_game.free() ;
+            if(numberPlay!=0)
+            {
+                std::string stringScoreMax = "High Score:" ;
+                auto max_vector = std::max_element(scoreVector.begin(),scoreVector.end()) ;
+                int maxScore = *max_vector ;
+                stringScoreMax+=std::to_string(maxScore) ;
+                HighScore.setText(stringScoreMax);
+                HighScore.LoadTextTexture(font_time,grender) ;
+                HighScore.showText(grender,SCREEN_WIDTH-530, 15,0) ;
+                HighScore.free() ;
+            }
 
         }
         else if(isHelping)
@@ -702,13 +872,13 @@ int main(int argc, char* argv[])
             object buttonYes ;
             SDL_Texture* buttonYesTexture = nullptr ;
             buttonYesTexture = buttonYes.LoadTexture("Image//Background//Yes.png") ;
-            buttonYes.setPos(SCREEN_WIDTH/2 - 250,SCREEN_HEIGHT/ 2) ;
+            buttonYes.setPos(SCREEN_WIDTH/2 - 270,SCREEN_HEIGHT/ 2) ;
             buttonYes.draw(grender,buttonYesTexture,nullptr) ;
 
             object buttonNo ;
             SDL_Texture* buttonNoTexture = nullptr;
             buttonNoTexture = buttonNo.LoadTexture("Image//Background//No.png") ;
-            buttonNo.setPos(SCREEN_WIDTH/2 + 100, SCREEN_HEIGHT/2) ;
+            buttonNo.setPos(SCREEN_WIDTH/2 + 150, SCREEN_HEIGHT/2) ;
             buttonNo.draw(grender,buttonNoTexture,nullptr) ;
 
             while(SDL_PollEvent(&gevent)!= 0)
@@ -754,33 +924,48 @@ int main(int argc, char* argv[])
 
             SDL_Texture* buttonYesTexture = nullptr;
             buttonYesTexture = buttonYes.LoadTexture("Image//Background//Yes.png") ;
-            buttonYes.setPos(SCREEN_WIDTH/2 - 250,SCREEN_HEIGHT/2) ;
+            buttonYes.setPos(SCREEN_WIDTH/2 - 280,SCREEN_HEIGHT/2+30) ;
             buttonYes.draw(grender,buttonYesTexture,nullptr) ;
 
             object buttonNo ;
             SDL_Texture* buttonNoTexture = nullptr;
             buttonNoTexture = buttonNo.LoadTexture("Image//Background//No.png") ;
-            buttonNo.setPos(SCREEN_WIDTH/2 + 100,SCREEN_HEIGHT/2) ;
+            buttonNo.setPos(SCREEN_WIDTH/2 + 130,SCREEN_HEIGHT/2+30) ;
             buttonNo.draw(grender,buttonNoTexture,nullptr) ;
 
+            int randomX = 300 + std::rand()%(1000-350+1) ;
+            scoreVector.push_back(scoreValue);
             while(SDL_PollEvent(&gevent)!=0)
             {
                 if(gevent.type == SDL_QUIT)
                 {
                     loadMenu = true ;
                     endGame  = false ;
+                    dino.setState(1) ;
                 }
                 else if(gevent.type == SDL_KEYUP || gevent.type == SDL_KEYDOWN)
                 {
                     if(gevent.key.keysym.sym == SDLK_SPACE)
                     {
                         isStarting = true ;
+                        dino.setState(1) ;
+                        timeValue = SDL_GetTicks() ;
                         endGame = false ;
+                        airplane.setPos(SCREEN_WIDTH + randomX, SCREEN_HEIGHT * 0.7) ;
+                        obstacle1.setPos(SCREEN_WIDTH + 2*randomX, SCREEN_HEIGHT - obstacleRect1.h - 10);
+                        obstacle2.setPos(SCREEN_WIDTH + 3*randomX, SCREEN_HEIGHT - obstacleRect2.h - 10);
+                        obstacle3.setPos(SCREEN_WIDTH + 4*randomX, SCREEN_HEIGHT - obstacleRect3.h - 10);
+                        numberPlay++;
                     }
                     else if(gevent.key.keysym.scancode == SDL_SCANCODE_ESCAPE)
                     {
-                        loadMenu = true;
+                        loadMenu = true ;
+                        dino.setState(1) ;
                         endGame = false ;
+                        airplane.setPos(SCREEN_WIDTH , SCREEN_HEIGHT * 0.7) ;
+                        obstacle1.setPos(SCREEN_WIDTH + 400, SCREEN_HEIGHT - obstacleRect1.h - 10);
+                        obstacle2.setPos(SCREEN_WIDTH + 900, SCREEN_HEIGHT - obstacleRect2.h - 10);
+                        obstacle3.setPos(SCREEN_WIDTH + 2000, SCREEN_HEIGHT - obstacleRect3.h - 10);
                     }
                 }
                 else if(gevent.type == SDL_MOUSEBUTTONDOWN || gevent.type == SDL_MOUSEBUTTONUP)
@@ -791,12 +976,23 @@ int main(int argc, char* argv[])
                         dino.setState(1) ;
                         timeValue = SDL_GetTicks() ;
                         endGame = false ;
+                        airplane.setPos(SCREEN_WIDTH , SCREEN_HEIGHT * 0.7) ;
+                        obstacle1.setPos(SCREEN_WIDTH + randomX, SCREEN_HEIGHT - obstacleRect1.h - 10);
+                        obstacle2.setPos(SCREEN_WIDTH + 3*randomX, SCREEN_HEIGHT - obstacleRect2.h - 10);
+                        obstacle3.setPos(SCREEN_WIDTH + 2*randomX, SCREEN_HEIGHT - obstacleRect3.h - 10);
+                        numberPlay++;
+
                     }
                     else if(buttonNo.checkFocus(mousePosx,mousePosy))
                     {
                         loadMenu = true ;
                         dino.setState(1) ;
                         endGame = false ;
+                        numberPlay++ ;
+                        airplane.setPos(SCREEN_WIDTH + 1600, SCREEN_HEIGHT * 0.7) ;
+                        obstacle1.setPos(SCREEN_WIDTH + 400, SCREEN_HEIGHT - obstacleRect1.h - 10);
+                        obstacle2.setPos(SCREEN_WIDTH + 800, SCREEN_HEIGHT - obstacleRect2.h - 10);
+                        obstacle3.setPos(SCREEN_WIDTH , SCREEN_HEIGHT - obstacleRect3.h - 10);
                     }
 
                 }
